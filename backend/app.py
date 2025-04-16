@@ -4,20 +4,15 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from openai import OpenAI, OpenAIError # <-- Import OpenAI and specific error type
+from openai import OpenAI, OpenAIError
 
-# Load environment variables from .env file
 load_dotenv()
-
-# Initialize Flask app
 app = Flask(__name__)
-CORS(app) # Initialize CORS
+CORS(app)
 
-# --- Retrieve OpenAI API key ---
-openai_api_key = os.getenv("OPENAI_API_KEY")
-
-# --- Initialize OpenAI Client ---
+# --- Initialize OpenAI Client (Keep as before) ---
 client = None
+openai_api_key = os.getenv("OPENAI_API_KEY")
 if openai_api_key:
     try:
         client = OpenAI(api_key=openai_api_key)
@@ -27,71 +22,91 @@ if openai_api_key:
 else:
     print("ERROR: OPENAI_API_KEY environment variable not found. OpenAI client not initialized.")
 
-# --- System Prompt for Socratic Dialogue ---
-# This is critical for guiding the AI's behavior. You'll likely tune this.
+# --- System Prompt (Keep as before) ---
 SYSTEM_PROMPT = """
-You are a Socratic partner. Your goal is to help the user explore their own thinking \
-through questioning. Do NOT provide answers, opinions, or solutions. \
-Focus SOLELY on asking clarifying questions, probing assumptions, exploring reasoning, \
-and examining implications. Keep your questions open-ended and concise. \
-Example question types:
-- "What do you mean by X?"
-- "What assumptions are you making?"
-- "Why do you think that is the case?"
-- "What are the consequences if that is true/false?"
-- "Can you elaborate on that point?"
-Avoid judgmental language. Be neutral and inquisitive.
+You adopt the persona of a rigorous and intellectually challenging philosophy tutor, akin to a sharp-witted, slightly skeptical professor. \
+Your communication style is analytical, precise, and aims to make the user think critically and deeply. Avoid generic chatbot phrases; be direct and engaging. \
+
+Your primary goal is to dissect the user's reasoning and expose underlying assumptions while providing thought provoking questions and examples to engage the user in the conversation. \
+Do not ask multiple questions at once. Choose the most relevant question to the user's thinking process.'
+Focus intensely on:
+1.  **Identifying Hidden Assumptions:** Ask questions that reveal the premises the user might not realize they are relying on
+2.  **Challenging Logic:** Probe the logical connections between the user's points. Look for inconsistencies or potential fallacies
+3.  **Demanding Clarity:** Push for precise definitions and clear articulation of ideas
+
+Where relevant and helpful for clarifying the discussion, you may introduce philosophical concepts or terms (e.g., epistemology, utilitarianism, deductive reasoning, cognitive bias). \
+
+**Using Illustrative Examples:**
+While your primary tool remains questioning, you may occasionally introduce a *brief, neutral, hypothetical example or analogy* **if and only if** it serves directly to clarify a complex assumption or potential contradiction you are asking the user about. The example must be embedded within or immediately frame the question.
+*Purpose:* The sole purpose is to make your *question* more concrete or understandable.
+*Format:* Keep it concise. It should illustrate the *tension* you want the user to address.
+*Example of Integration:* Instead of just asking 'Is X always right?', you might ask, 'You argue X is always right. Consider a hypothetical situation like [brief scenario where X leads to a questionable outcome]. How does your principle apply here, or does this scenario reveal a nuance we should explore?'
+
+**Constraints:**
+- **NEVER provide your own answers, opinions, solutions, or direct instruction.** The example is illustrative, not prescriptive.
+- **Maintain neutrality on the topic itself.** Your focus is on the user's thinking *process*.
+- **Be concise** in both examples and questions.
 """
 
-# Define the dialogue API endpoint
 @app.route('/api/dialogue', methods=['POST'])
 def handle_dialogue():
-    """Handles incoming messages and gets a Socratic response from OpenAI."""
+    """Handles incoming conversation history and gets the next Socratic response."""
 
-    # Check if OpenAI client is available
     if not client:
-        return jsonify({"error": "OpenAI client not initialized. Check API key."}), 503 # Service Unavailable
+        return jsonify({"error": "OpenAI client not initialized. Check API key."}), 503
 
     try:
         data = request.get_json()
-        if not data or 'message' not in data:
-            return jsonify({"error": "Missing 'message' in request body"}), 400
 
-        user_message = data['message']
+        # --- Get history from request ---
+        conversation_history = data.get('history')
 
-        # --- Call OpenAI API ---
+        # --- Validate history ---
+        if not conversation_history or not isinstance(conversation_history, list):
+            # If history is missing or not a list, maybe start fresh or return error
+            # For now, let's return an error
+            return jsonify({"error": "Missing or invalid 'history' in request body"}), 400
+
+        # Ensure history is not excessively long (optional safety measure)
+        # MAX_HISTORY_LENGTH = 20 # Example limit (10 turns)
+        # if len(conversation_history) > MAX_HISTORY_LENGTH:
+        #    conversation_history = conversation_history[-MAX_HISTORY_LENGTH:]
+
+        print(f"Received history length: {len(conversation_history)}") # Log history length
+
+        # --- Construct messages for OpenAI ---
+        messages_for_openai = [
+            {"role": "system", "content": SYSTEM_PROMPT}
+        ]
+        messages_for_openai.extend(conversation_history) # Add the received history
+
+
+        # --- Call OpenAI API (using the constructed messages) ---
         try:
-            print(f"Sending to OpenAI: '{user_message}'") # Log what we send
+            print(f"Sending {len(messages_for_openai)} messages to OpenAI.") # Log message count
             completion = client.chat.completions.create(
-                model="gpt-3.5-turbo", # Or "gpt-4" or other suitable model
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": user_message}
-                ],
-                temperature=0.7, # Adjust for creativity vs predictability
-                max_tokens=100 # Limit response length
+                model="gpt-4.1-mini",
+                messages=messages_for_openai, # Pass the full context
+                temperature=0.85,
+                max_tokens=100
             )
-
-            # Extract the AI's response
             ai_response = completion.choices[0].message.content.strip()
-            print(f"Received from OpenAI: '{ai_response}'") # Log what we receive
+            print(f"Received from OpenAI: '{ai_response}'")
 
             return jsonify({"response": ai_response})
 
+        # (Keep existing OpenAIError and other exception handling)
         except OpenAIError as e:
-            # Handle specific OpenAI API errors
             print(f"OpenAI API Error: {e}")
-            return jsonify({"error": f"Error communicating with AI service: {e}"}), 502 # Bad Gateway
+            return jsonify({"error": f"Error communicating with AI service: {e}"}), 502
         except Exception as e:
-             # Handle other unexpected errors during API call
             print(f"Unexpected error during OpenAI call: {e}")
             return jsonify({"error": "An unexpected error occurred while processing your request."}), 500
 
     except Exception as e:
-        # Handle errors in request parsing or other parts of the function
         print(f"Error handling request: {e}")
         return jsonify({"error": "An internal server error occurred"}), 500
 
-# Run the Flask development server
+# (Keep __main__ block as before)
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

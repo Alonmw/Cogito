@@ -7,12 +7,17 @@
     <link rel="stylesheet" href="style.css"> </head>
 <body>
 
+    <header>
     <h1>Socratic Partner</h1>
+    <button id="clearButton">Clear Chat</button>
+    </header>
 
     <div id="chatbox">
-        <p class="message ai">Hello! What topic is on your mind today?</p>
-    </div>
 
+    </div>
+    <div id="loadingIndicator" style="display: none; text-align: center; padding: 10px; color: #888;">
+    <i>AI is thinking...</i>
+    </div>
     <div id="inputArea">
         <input type="text" id="userInput" placeholder="Type your message here...">
         <button id="sendButton">Send</button>

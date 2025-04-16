@@ -1,60 +1,188 @@
 /* frontend-web/style.css */
+/* Combined and Refined Styles - Version from our conversation */
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
+
+:root {
+    --google-blue: #1a73e8;
+    --google-grey-100: #f8f9fa;
+    --google-grey-200: #f1f3f4;
+    --google-grey-300: #e8eaed;
+    --google-grey-500: #bdc1c6;
+    --google-grey-700: #5f6368;
+    --google-grey-900: #202124;
+    --background-color: #fff;
+    --text-color: var(--google-grey-900);
+    --input-border-color: var(--google-grey-500);
+    --message-ai-bg: var(--google-grey-200);
+    --message-user-bg: #e1f0ff; /* Lighter blue for user messages */
+}
+
 body {
-    font-family: sans-serif;
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
     display: flex;
     flex-direction: column;
-    height: 95vh;
-    margin: 10px;
+    height: 100vh; /* Use full viewport height */
+    box-sizing: border-box; /* Include padding/border in height/width */
 }
 
+/* Header Styling */
+header {
+    padding: 14px 24px; /* Slightly more vertical padding */
+    border-bottom: 1px solid var(--google-grey-300);
+    background-color: var(--background-color); /* Or use --google-grey-100 for a very light grey */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03); /* Subtle shadow for separation */
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.15em; /* Slightly adjust size */
+    font-weight: 500; /* Medium weight */
+    color: var(--google-grey-900);
+    line-height: 1.5; /* Ensure vertical alignment if text wraps */
+}
+
+/* Refined Clear Button Styling */
+#clearButton {
+    background-color: transparent; /* Make background transparent */
+    border: none; /* Remove default border */
+    color: var(--google-grey-700); /* Use a neutral grey color */
+    padding: 8px 12px; /* Adjust padding */
+    border-radius: 4px; /* Slightly rounded corners */
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500; /* Medium weight text */
+    margin-left: 16px; /* Add some space from the title */
+    transition: background-color 0.2s ease, color 0.2s ease; /* Smooth transitions */
+}
+
+#clearButton:hover {
+    background-color: var(--google-grey-100); /* Very light grey background on hover */
+    color: var(--google-grey-900); /* Slightly darker text on hover */
+}
+
+#clearButton:active {
+    background-color: var(--google-grey-200); /* Slightly darker for active state */
+}
+
+/* Main chat area container */
+#chatboxContainer { /* Wraps loading indicator and chatbox */
+    flex-grow: 1; /* Take available space */
+    overflow-y: hidden; /* Hide scrollbar here, manage scrolling in chatbox */
+    padding: 0 24px; /* Match header horizontal padding */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Loading Indicator Styling */
+#loadingIndicator {
+    text-align: center;
+    padding: 15px 0; /* Adjusted padding */
+    color: var(--google-grey-700);
+    font-style: italic;
+    flex-shrink: 0; /* Prevent shrinking */
+    /* display: none; is handled by JS */
+}
+
+/* Chatbox Styling */
 #chatbox {
-    flex-grow: 1;
-    border: 1px solid #ccc;
-    padding: 10px;
-    margin-bottom: 10px;
-    overflow-y: auto; /* Add scrollbar if content overflows */
-    background-color: #f9f9f9;
+    flex-grow: 1; /* Take available space */
+    overflow-y: auto; /* Enable scrolling only for messages */
+    padding: 10px 0; /* Add some vertical padding within the container */
 }
 
+/* Message Styling */
 .message {
-    margin-bottom: 8px;
-    padding: 8px;
-    border-radius: 5px;
-    max-width: 80%;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 18px; /* More rounded corners */
+    max-width: 75%;
+    line-height: 1.4;
+    word-wrap: break-word; /* Ensure long words wrap */
+    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.05); /* Subtle shadow on messages */
 }
 
 .user {
-    background-color: #d1eaff; /* Light blue for user */
+    background-color: var(--message-user-bg);
+    color: var(--google-grey-900); /* Darker text for contrast */
     margin-left: auto; /* Align user messages to the right */
-    text-align: right;
+    border-bottom-right-radius: 4px; /* Slightly less round on one corner */
 }
 
 .ai {
-    background-color: #e0e0e0; /* Light grey for AI */
+    background-color: var(--message-ai-bg);
+    color: var(--google-grey-900);
     margin-right: auto; /* Align AI messages to the left */
+    border-bottom-left-radius: 4px; /* Slightly less round on one corner */
 }
 
+/* Input Area Styling */
 #inputArea {
     display: flex;
+    padding: 15px 24px; /* Match header/container horizontal padding */
+    border-top: 1px solid var(--google-grey-300);
+    background-color: var(--background-color);
+    flex-shrink: 0; /* Prevent input area from shrinking */
+    box-shadow: 0 -1px 2px 0 rgba(0, 0, 0, 0.03); /* Subtle shadow */
 }
 
 #userInput {
     flex-grow: 1;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
+    padding: 10px 16px; /* Slightly more padding */
+    border: 1px solid var(--input-border-color);
+    border-radius: 18px; /* Rounded input */
+    font-size: 1em;
+    margin-right: 10px;
+    line-height: 1.4; /* Match message line height */
 }
 
+#userInput:focus {
+    outline: none;
+    border-color: var(--google-blue);
+    box-shadow: 0 0 0 1px var(--google-blue); /* Subtle focus ring */
+}
+
+/* Send Button Styling */
 #sendButton {
-    padding: 8px 15px;
-    margin-left: 5px;
+    padding: 10px 20px;
     border: none;
-    background-color: #007bff;
+    background-color: var(--google-blue);
     color: white;
-    border-radius: 3px;
+    border-radius: 18px; /* Rounded button */
+    font-size: 1em;
+    font-weight: 500;
     cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
 #sendButton:hover {
-    background-color: #0056b3;
+    background-color: #185abc; /* Darker blue on hover */
+}
+
+#sendButton:active {
+    background-color: #144a9c; /* Even darker blue */
+}
+
+/* Optional: Style scrollbar for a cleaner look (Webkit browsers) */
+#chatbox::-webkit-scrollbar {
+    width: 8px; /* Slightly wider scrollbar */
+}
+#chatbox::-webkit-scrollbar-track {
+    background: transparent; /* Make track invisible */
+}
+#chatbox::-webkit-scrollbar-thumb {
+    background-color: var(--google-grey-300); /* Lighter thumb */
+    border-radius: 4px;
+    border: 2px solid transparent; /* Creates padding around thumb */
+    background-clip: content-box;
+}
+#chatbox::-webkit-scrollbar-thumb:hover {
+    background-color: var(--google-grey-500); /* Darker thumb on hover */
 }
