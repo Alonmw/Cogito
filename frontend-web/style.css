@@ -186,3 +186,66 @@ header h1 {
 #chatbox::-webkit-scrollbar-thumb:hover {
     background-color: var(--google-grey-500); /* Darker thumb on hover */
 }
+
+/* ================================== */
+/* Responsive Styles for Mobile       */
+/* ================================== */
+@media (max-width: 600px) {
+
+    body {
+        /* Prevent potential horizontal scroll issues on some mobile browsers */
+        overflow-x: hidden;
+    }
+
+    header {
+        padding: 10px 16px; /* Reduce header padding */
+        flex-wrap: wrap; /* Allow items to wrap if needed, though unlikely here */
+    }
+
+    header h1 {
+        font-size: 1.1em; /* Slightly smaller title */
+    }
+
+    #clearButton {
+        padding: 6px 8px; /* Slightly smaller padding */
+        font-size: 0.85em;
+    }
+
+    #chatboxContainer {
+        padding: 0 16px; /* Reduce horizontal padding */
+    }
+
+    #loadingIndicator {
+        padding: 10px 0; /* Reduce padding */
+        font-size: 0.9em;
+    }
+
+    .message {
+        max-width: 85%; /* Allow messages to take slightly more width */
+        padding: 8px 12px; /* Slightly reduce padding */
+        font-size: 0.95em; /* Slightly smaller message font */
+    }
+
+    #inputArea {
+        padding: 10px 16px; /* Reduce padding */
+        flex-wrap: wrap; /* Allow wrapping if input/button get too wide */
+    }
+
+    #userInput {
+        padding: 8px 12px; /* Reduce padding */
+        font-size: 0.95em;
+        margin-right: 8px; /* Slightly reduce margin */
+        min-width: 0; /* Allow input to shrink properly */
+    }
+
+    #sendButton {
+        padding: 8px 15px; /* Reduce padding */
+        font-size: 0.95em;
+    }
+
+    /* Optional: Hide scrollbar completely on mobile if desired (Webkit) */
+    /* #chatbox::-webkit-scrollbar {
+        display: none;
+    } */
+}
+
