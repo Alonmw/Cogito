@@ -1,5 +1,5 @@
 // frontend-web/script.js
-// v2: Added scroll-to-bottom on input focus for mobile keyboard
+// v3: Increased delay for scroll-on-focus, added logging
 
 const chatbox = document.getElementById('chatbox');
 const userInput = document.getElementById('userInput');
@@ -15,7 +15,7 @@ function scrollToBottom() {
     // Use setTimeout to allow the DOM/layout to potentially update first
     setTimeout(() => {
         chatbox.scrollTop = chatbox.scrollHeight;
-    }, 0); // A minimal delay is often enough
+    }, 0); // Minimal delay after adding message
 }
 
 // Function to add a message to the chatbox AND history
@@ -25,7 +25,7 @@ function addMessage(text, senderRole) { // senderRole should be 'user' or 'assis
     messageElement.classList.add('message', senderRole === 'assistant' ? 'ai' : 'user');
     chatbox.appendChild(messageElement);
 
-    // Add to history (with basic duplicate check logic from previous version)
+    // Add to history (with basic duplicate check logic)
     if (conversationHistory.length === 0 && senderRole === 'assistant') {
          conversationHistory.push({ role: senderRole, content: text });
     } else if (conversationHistory.length > 0 && conversationHistory[conversationHistory.length - 1].content !== text) {
@@ -33,7 +33,7 @@ function addMessage(text, senderRole) { // senderRole should be 'user' or 'assis
     } else if (senderRole === 'user'){
          conversationHistory.push({ role: senderRole, content: text });
     }
-    console.log("History:", conversationHistory); // For debugging
+    // console.log("History:", conversationHistory); // Optional debugging
 
     // Scroll to bottom whenever a new message is added
     scrollToBottom();
@@ -52,14 +52,14 @@ async function sendMessage() {
     const userText = userInput.value.trim();
     if (userText === '') return;
 
-    addMessage(userText, 'user'); // Adds message and scrolls down
+    addMessage(userText, 'user');
     userInput.value = '';
 
     loadingIndicator.style.display = 'block';
-    scrollToBottom(); // Ensure scroll happens even when indicator shows
+    scrollToBottom();
 
     try {
-        const response = await fetch('https://socratic-questioner.onrender.com/api/dialogue', {
+        const response = await fetch('https://socratic-questioner.onrender.com/api/dialogue', { // Ensure this URL is correct
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ history: conversationHistory }),
@@ -73,14 +73,14 @@ async function sendMessage() {
              errorElement.classList.add('message', 'ai');
              errorElement.style.color = 'red';
              chatbox.appendChild(errorElement);
-             scrollToBottom(); // Scroll after adding error message
+             scrollToBottom();
              return;
         }
 
         const data = await response.json();
 
         if (data.response) {
-             addMessage(data.response, 'assistant'); // Adds message and scrolls down
+             addMessage(data.response, 'assistant');
         } else if (data.error) {
              console.error('Error in backend response:', data.error);
              const errorElement = document.createElement('p');
@@ -88,7 +88,7 @@ async function sendMessage() {
              errorElement.classList.add('message', 'ai');
              errorElement.style.color = 'red';
              chatbox.appendChild(errorElement);
-             scrollToBottom(); // Scroll after adding error message
+             scrollToBottom();
         }
 
     } catch (error) {
@@ -98,7 +98,7 @@ async function sendMessage() {
          errorElement.classList.add('message', 'ai');
          errorElement.style.color = 'red';
          chatbox.appendChild(errorElement);
-         scrollToBottom(); // Scroll after adding error message
+         scrollToBottom();
     } finally {
         loadingIndicator.style.display = 'none';
     }
@@ -115,15 +115,19 @@ userInput.addEventListener('keypress', function(event) {
 });
 
 clearButton.addEventListener('click', () => {
-    addInitialMessage(); // Resets history and adds initial message (which also scrolls)
+    addInitialMessage();
 });
 
-// --- NEW: Scroll to bottom when input gets focus (for mobile keyboard) ---
+// --- Scroll to bottom when input gets focus (for mobile keyboard) ---
 userInput.addEventListener('focus', () => {
-    // Use a slightly longer timeout to allow keyboard animation/resize to settle
+    // *** INCREASED DELAY AND ADDED LOGGING ***
+    const focusScrollDelay = 500; // Increased delay to 500ms (adjust if needed)
+    console.log(`Input focused. Scheduling scroll in ${focusScrollDelay}ms.`);
     setTimeout(() => {
+        console.log(`Executing focus scroll. ScrollTop before: ${chatbox.scrollTop}, ScrollHeight: ${chatbox.scrollHeight}`);
         chatbox.scrollTop = chatbox.scrollHeight;
-    }, 200); // Adjust delay (ms) if needed
+        console.log(`ScrollTop after: ${chatbox.scrollTop}`);
+    }, focusScrollDelay);
 });
 
 // --- Initial Setup ---
