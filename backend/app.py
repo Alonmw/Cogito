@@ -8,7 +8,7 @@ from openai import OpenAI, OpenAIError
 
 load_dotenv()
 app = Flask(__name__)
-CORS(app) # Remember to configure origins=['YourFrontendURL'] before final deploy
+CORS(app, origins=["https://socratic-questioner.vercel.app"])
 
 # --- Configuration ---
 MAX_HISTORY_MSGS = 20 # Max number of messages (e.g., 10 turns) to keep in history
