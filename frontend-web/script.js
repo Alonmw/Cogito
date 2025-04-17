@@ -55,7 +55,7 @@ async function sendMessage() {
 
     try {
         // --- Send the ENTIRE history to the backend ---
-        const response = await fetch('http://127.0.0.1:5000/api/dialogue', {
+        const response = await fetch('https://socratic-questioner.onrender.com/api/dialogue', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             // Send history instead of just the message
