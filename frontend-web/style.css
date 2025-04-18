@@ -31,13 +31,15 @@ body {
     margin: 0;
     display: flex;
     flex-direction: column;
-    height: calc(var(--vh, 1vh) * 100); /* Use 100% instead of 100vh */
+    height: 100%; /* Use 100% instead of 100vh */
     box-sizing: border-box;
     overflow: hidden; /* Prevent scrolling on body */
 }
 
 /* Header Styling */
 header {
+    position: fixed;
+
     padding: 14px 24px;
     border-bottom: 1px solid var(--google-grey-300);
     background-color: var(--background-color);
@@ -81,7 +83,6 @@ header h1 {
 
 /* Main chat area container */
 #chatboxContainer {
-    flex-grow: 1; /* Allow container to take up remaining space */
     min-height: 0; /* Crucial: Allows the container to shrink below its content size */
     overflow: hidden; /* Hide overflow from container itself */
     padding: 0 24px;
