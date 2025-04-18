@@ -1,5 +1,5 @@
 /* frontend-web/style.css */
-/* Combined and Refined Styles - v2 (Keyboard Adjust) */
+/* Reverted to state after header refinement, before keyboard fix attempts */
 
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
 
@@ -31,7 +31,7 @@ body {
     margin: 0;
     display: flex;
     flex-direction: column;
-    height: 100%; /* Use 100% instead of 100vh */
+    height: 100%; /* Use 100% */
     box-sizing: border-box;
     overflow: hidden; /* Prevent scrolling on body */
 }
@@ -46,6 +46,7 @@ header {
     align-items: center;
     flex-shrink: 0; /* Prevent header from shrinking */
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    /* No position: sticky or fixed */
 }
 
 header h1 {
@@ -69,20 +70,13 @@ header h1 {
     margin-left: 16px;
     transition: background-color 0.2s ease, color 0.2s ease;
 }
-
-#clearButton:hover {
-    background-color: var(--google-grey-100);
-    color: var(--google-grey-900);
-}
-
-#clearButton:active {
-    background-color: var(--google-grey-200);
-}
+#clearButton:hover { background-color: var(--google-grey-100); color: var(--google-grey-900); }
+#clearButton:active { background-color: var(--google-grey-200); }
 
 /* Main chat area container */
 #chatboxContainer {
     flex-grow: 1; /* Allow container to take up remaining space */
-    min-height: 0; /* Crucial: Allows the container to shrink below its content size */
+    min-height: 0; /* Allows the container to shrink */
     overflow: hidden; /* Hide overflow from container itself */
     padding: 0 24px;
     display: flex;
@@ -95,7 +89,7 @@ header h1 {
     padding: 15px 0;
     color: var(--google-grey-700);
     font-style: italic;
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0;
     /* display: none; is handled by JS */
 }
 
@@ -104,7 +98,6 @@ header h1 {
     flex-grow: 1; /* Allow chatbox to fill the container */
     overflow-y: auto; /* Enable scrolling only for messages */
     padding: 10px 0;
-    /* height: 100%; might not be needed if flex-grow is used correctly */
 }
 
 /* Message Styling */
@@ -117,146 +110,42 @@ header h1 {
     word-wrap: break-word;
     box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.05);
 }
-
-.user {
-    background-color: var(--message-user-bg);
-    color: var(--google-grey-900);
-    margin-left: auto;
-    border-bottom-right-radius: 4px;
-}
-
-.ai {
-    background-color: var(--message-ai-bg);
-    color: var(--google-grey-900);
-    margin-right: auto;
-    border-bottom-left-radius: 4px;
-}
+.user { background-color: var(--message-user-bg); color: var(--google-grey-900); margin-left: auto; border-bottom-right-radius: 4px; }
+.ai { background-color: var(--message-ai-bg); color: var(--google-grey-900); margin-right: auto; border-bottom-left-radius: 4px; }
 
 /* Input Area Styling */
 #inputArea {
     display: flex;
+    align-items: center;
     padding: 15px 24px;
     border-top: 1px solid var(--google-grey-300);
     background-color: var(--background-color);
     flex-shrink: 0; /* Prevent input area from shrinking */
     box-shadow: 0 -1px 2px 0 rgba(0, 0, 0, 0.03);
+    /* No position: fixed */
 }
+#userInput { flex-grow: 1; padding: 10px 16px; border: 1px solid var(--input-border-color); border-radius: 18px; font-size: 1em; margin-right: 10px; line-height: 1.4; }
+#userInput:focus { outline: none; border-color: var(--google-blue); box-shadow: 0 0 0 1px var(--google-blue); }
+#sendButton { padding: 10px 20px; border: none; background-color: var(--google-blue); color: white; border-radius: 18px; font-size: 1em; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease; }
+#sendButton:hover { background-color: #185abc; }
+#sendButton:active { background-color: #144a9c; }
 
-#userInput {
-    flex-grow: 1;
-    padding: 10px 16px;
-    border: 1px solid var(--input-border-color);
-    border-radius: 18px;
-    font-size: 1em;
-    margin-right: 10px;
-    line-height: 1.4;
-}
+/* Scrollbar Styling */
+#chatbox::-webkit-scrollbar { width: 8px; }
+#chatbox::-webkit-scrollbar-track { background: transparent; }
+#chatbox::-webkit-scrollbar-thumb { background-color: var(--google-grey-300); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+#chatbox::-webkit-scrollbar-thumb:hover { background-color: var(--google-grey-500); }
 
-#userInput:focus {
-    outline: none;
-    border-color: var(--google-blue);
-    box-shadow: 0 0 0 1px var(--google-blue);
-}
-
-/* Send Button Styling */
-#sendButton {
-    padding: 10px 20px;
-    border: none;
-    background-color: var(--google-blue);
-    color: white;
-    border-radius: 18px;
-    font-size: 1em;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-#sendButton:hover {
-    background-color: #185abc;
-}
-
-#sendButton:active {
-    background-color: #144a9c;
-}
-
-/* Optional: Style scrollbar (Webkit) */
-#chatbox::-webkit-scrollbar {
-    width: 8px;
-}
-#chatbox::-webkit-scrollbar-track {
-    background: transparent;
-}
-#chatbox::-webkit-scrollbar-thumb {
-    background-color: var(--google-grey-300);
-    border-radius: 4px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-}
-#chatbox::-webkit-scrollbar-thumb:hover {
-    background-color: var(--google-grey-500);
-}
-
-
-/* ================================== */
-/* Responsive Styles for Mobile       */
-/* (Keep the existing media query)    */
-/* ================================== */
+/* Responsive Styles for Mobile */
 @media (max-width: 600px) {
-
-    body {
-        /* Prevent potential horizontal scroll issues on some mobile browsers */
-        /* overflow-x: hidden; -- Already handled by body overflow:hidden */
-    }
-
-    header {
-        padding: 10px 16px; /* Reduce header padding */
-        flex-wrap: wrap; /* Allow items to wrap if needed, though unlikely here */
-    }
-
-    header h1 {
-        font-size: 1.1em; /* Slightly smaller title */
-    }
-
-    #clearButton {
-        padding: 6px 8px; /* Slightly smaller padding */
-        font-size: 0.85em;
-    }
-
-    #chatboxContainer {
-        padding: 0 16px; /* Reduce horizontal padding */
-    }
-
-    #loadingIndicator {
-        padding: 10px 0; /* Reduce padding */
-        font-size: 0.9em;
-    }
-
-    .message {
-        max-width: 85%; /* Allow messages to take slightly more width */
-        padding: 8px 12px; /* Slightly reduce padding */
-        font-size: 0.95em; /* Slightly smaller message font */
-    }
-
-    #inputArea {
-        padding: 10px 16px; /* Reduce padding */
-        flex-wrap: wrap; /* Allow wrapping if input/button get too wide */
-    }
-
-    #userInput {
-        padding: 8px 12px; /* Reduce padding */
-        font-size: 0.95em;
-        margin-right: 8px; /* Slightly reduce margin */
-        min-width: 0; /* Allow input to shrink properly */
-    }
-
-    #sendButton {
-        padding: 8px 15px; /* Reduce padding */
-        font-size: 0.95em;
-    }
-
-    /* Optional: Hide scrollbar completely on mobile if desired (Webkit) */
-    /* #chatbox::-webkit-scrollbar {
-        display: none;
-    } */
+    /* Keep the responsive adjustments */
+    header { padding: 10px 16px; }
+    header h1 { font-size: 1.1em; }
+    #clearButton { padding: 6px 8px; font-size: 0.85em; }
+    #chatboxContainer { padding: 0 16px; }
+    #loadingIndicator { padding: 10px 0; font-size: 0.9em; }
+    .message { max-width: 85%; padding: 8px 12px; font-size: 0.95em; }
+    #inputArea { padding: 10px 16px; flex-wrap: wrap; }
+    #userInput { padding: 8px 12px; font-size: 0.95em; margin-right: 8px; min-width: 0; }
+    #sendButton { padding: 8px 15px; font-size: 0.95em; }
 }
-

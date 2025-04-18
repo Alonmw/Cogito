@@ -8,7 +8,27 @@ from openai import OpenAI, OpenAIError
 
 load_dotenv()
 app = Flask(__name__)
-CORS(app, origins=["https://socratic-questioner.vercel.app"])
+
+allowed_origins = os.getenv("ALLOWED_ORIGINS")
+
+if allowed_origins:
+    if allowed_origins == "*":
+        # Allow all origins if env var is explicitly "*"
+        print("CORS: Allowing all origins based on ALLOWED_ORIGINS='*'.")
+        CORS(app, origins="*") # Explicitly set origins to *
+    else:
+        # Allow specific origins listed (comma-separated)
+        origins = [origin.strip() for origin in allowed_origins.split(',')]
+        print(f"CORS: Allowing specific origins from ALLOWED_ORIGINS: {origins}")
+        CORS(app, origins=origins)
+else:
+    # Default if ALLOWED_ORIGINS is not set at all
+    # For safety in production, you might want to default to NO origins allowed
+    # But for local dev/staging convenience, allowing '*' might be okay if explicitly desired.
+    # Let's default to allowing '*' if unset, but print a warning.
+    print("Warning: ALLOWED_ORIGINS env var not set. Defaulting CORS to allow all origins ('*'). Set ALLOWED_ORIGINS for production.")
+    CORS(app, origins="*") # Default to allow all if unset
+# --- End CORS Configuration ---
 
 # --- Configuration ---
 MAX_HISTORY_MSGS = 20 # Max number of messages (e.g., 10 turns) to keep in history
@@ -84,7 +104,7 @@ def handle_dialogue():
         try:
             print(f"Sending {len(messages_for_openai)} messages to OpenAI.")
             completion = client.chat.completions.create(
-                model="gpt-4-turbo", # Or your chosen model
+                model="gpt-4o-mini", # Or your chosen model
                 messages=messages_for_openai,
                 temperature=0.7,
                 max_tokens=100 # Adjust if needed
