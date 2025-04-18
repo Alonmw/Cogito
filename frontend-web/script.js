@@ -62,7 +62,7 @@ function addMessage(text, senderRole) { // senderRole should be 'user' or 'assis
 
 // Function to display the initial AI message and add to history
 function addInitialMessage() {
-    const initialMessage = "?";
+    const initialMessage = "Greetings. I do not have answers, only questions. Shall we think something through together?";
     chatbox.innerHTML = ''; // Clear visual chat
     conversationHistory = []; // Clear history array
     addMessage(initialMessage, 'assistant');
