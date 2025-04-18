@@ -1,115 +1,136 @@
 /* frontend-web/style.css */
-/* v7: Use dynamic --vh variable and fixed positioning */
+/* Reverted to state after header refinement, before keyboard fix attempts */
 
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
 
 :root {
-    /* Define --vh fallback for browsers without JS/initial load */
-    --vh: 1vh;
-
     --google-blue: #1a73e8;
-    /* ... other color variables ... */
-    --header-height: 57px;
-    --input-area-height: 65px;
+    --google-grey-100: #f8f9fa;
+    --google-grey-200: #f1f3f4;
+    --google-grey-300: #e8eaed;
+    --google-grey-500: #bdc1c6;
+    --google-grey-700: #5f6368;
+    --google-grey-900: #202124;
+    --background-color: #fff;
+    --text-color: var(--google-grey-900);
+    --input-border-color: var(--google-grey-500);
+    --message-ai-bg: var(--google-grey-200);
+    --message-user-bg: #e1f0ff; /* Lighter blue for user messages */
 }
 
+/* Ensure html and body take full height */
 html {
-    height: 100%; /* Or maybe also use calc(var(--vh, 1vh) * 100) ? Start with body */
-    overflow: hidden;
+    height: 100%;
+    overflow: hidden; /* Prevent scrolling on html */
 }
 
 body {
     font-family: 'Roboto', sans-serif;
-    /* --- Use dynamic viewport height --- */
-    height: calc(var(--vh, 1vh) * 100);
-    /* --- End dynamic viewport height --- */
     background-color: var(--background-color);
     color: var(--text-color);
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Use 100% */
     box-sizing: border-box;
-    padding-top: var(--header-height);
-    padding-bottom: var(--input-area-height);
-    overflow: hidden;
+    overflow: hidden; /* Prevent scrolling on body */
 }
 
-/* Header Styling (fixed) */
+/* Header Styling */
 header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 10;
-    height: var(--header-height);
-    box-sizing: border-box;
-    /* ... rest of header styles ... */
     padding: 14px 24px;
     border-bottom: 1px solid var(--google-grey-300);
     background-color: var(--background-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0; /* Prevent header from shrinking */
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    /* No position: sticky or fixed */
 }
-/* ... other header sub-styles ... */
-header h1 { margin: 0; font-size: 1.15em; font-weight: 500; color: var(--google-grey-900); line-height: 1.5; }
-#clearButton { background-color: transparent; border: none; color: var(--google-grey-700); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em; font-weight: 500; margin-left: 16px; transition: background-color 0.2s ease, color 0.2s ease; }
+
+header h1 {
+    margin: 0;
+    font-size: 1.15em;
+    font-weight: 500;
+    color: var(--google-grey-900);
+    line-height: 1.5;
+}
+
+/* Refined Clear Button Styling */
+#clearButton {
+    background-color: transparent;
+    border: none;
+    color: var(--google-grey-700);
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    margin-left: 16px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
 #clearButton:hover { background-color: var(--google-grey-100); color: var(--google-grey-900); }
 #clearButton:active { background-color: var(--google-grey-200); }
 
-
 /* Main chat area container */
 #chatboxContainer {
-    height: 100%; /* Fill the padded body height */
-    box-sizing: border-box;
-    overflow: hidden;
+    flex-grow: 1; /* Allow container to take up remaining space */
+    min-height: 0; /* Allows the container to shrink */
+    overflow: hidden; /* Hide overflow from container itself */
     padding: 0 24px;
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* Stack loading indicator and chatbox */
 }
 
 /* Loading Indicator Styling */
-#loadingIndicator { text-align: center; padding: 15px 0; color: var(--google-grey-700); font-style: italic; flex-shrink: 0; }
+#loadingIndicator {
+    text-align: center;
+    padding: 15px 0;
+    color: var(--google-grey-700);
+    font-style: italic;
+    flex-shrink: 0;
+    /* display: none; is handled by JS */
+}
 
 /* Chatbox Styling */
 #chatbox {
-    flex-grow: 1;
-    overflow-y: auto;
+    flex-grow: 1; /* Allow chatbox to fill the container */
+    overflow-y: auto; /* Enable scrolling only for messages */
     padding: 10px 0;
-    min-height: 0;
 }
 
-/* Message Styling (no changes needed) */
-.message { margin-bottom: 12px; padding: 10px 14px; border-radius: 18px; max-width: 75%; line-height: 1.4; word-wrap: break-word; box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.05); }
+/* Message Styling */
+.message {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 18px;
+    max-width: 75%;
+    line-height: 1.4;
+    word-wrap: break-word;
+    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.05);
+}
 .user { background-color: var(--message-user-bg); color: var(--google-grey-900); margin-left: auto; border-bottom-right-radius: 4px; }
 .ai { background-color: var(--message-ai-bg); color: var(--google-grey-900); margin-right: auto; border-bottom-left-radius: 4px; }
 
-/* Input Area Styling (fixed) */
+/* Input Area Styling */
 #inputArea {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    z-index: 10;
-    height: var(--input-area-height);
-    box-sizing: border-box;
-    /* ... rest of input area styles ... */
     display: flex;
     align-items: center;
-    padding: 10px 24px;
+    padding: 15px 24px;
     border-top: 1px solid var(--google-grey-300);
     background-color: var(--background-color);
+    flex-shrink: 0; /* Prevent input area from shrinking */
     box-shadow: 0 -1px 2px 0 rgba(0, 0, 0, 0.03);
+    /* No position: fixed */
 }
-/* ... other input area sub-styles ... */
 #userInput { flex-grow: 1; padding: 10px 16px; border: 1px solid var(--input-border-color); border-radius: 18px; font-size: 1em; margin-right: 10px; line-height: 1.4; }
 #userInput:focus { outline: none; border-color: var(--google-blue); box-shadow: 0 0 0 1px var(--google-blue); }
 #sendButton { padding: 10px 20px; border: none; background-color: var(--google-blue); color: white; border-radius: 18px; font-size: 1em; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease; }
 #sendButton:hover { background-color: #185abc; }
 #sendButton:active { background-color: #144a9c; }
 
-
-/* Scrollbar Styling (no changes needed) */
-/* ... scrollbar styles ... */
+/* Scrollbar Styling */
 #chatbox::-webkit-scrollbar { width: 8px; }
 #chatbox::-webkit-scrollbar-track { background: transparent; }
 #chatbox::-webkit-scrollbar-thumb { background-color: var(--google-grey-300); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
@@ -117,19 +138,14 @@ header h1 { margin: 0; font-size: 1.15em; font-weight: 500; color: var(--google-
 
 /* Responsive Styles for Mobile */
 @media (max-width: 600px) {
-    :root {
-        /* Example: Adjust fixed heights for mobile */
-        --header-height: 50px;
-        --input-area-height: 60px;
-    }
-    /* (Keep other existing mobile styles from mobile_css_v2/v5) */
-    header { padding: 10px 16px; height: var(--header-height); }
+    /* Keep the responsive adjustments */
+    header { padding: 10px 16px; }
     header h1 { font-size: 1.1em; }
     #clearButton { padding: 6px 8px; font-size: 0.85em; }
     #chatboxContainer { padding: 0 16px; }
     #loadingIndicator { padding: 10px 0; font-size: 0.9em; }
     .message { max-width: 85%; padding: 8px 12px; font-size: 0.95em; }
-    #inputArea { padding: 8px 16px; height: var(--input-area-height); }
+    #inputArea { padding: 10px 16px; flex-wrap: wrap; }
     #userInput { padding: 8px 12px; font-size: 0.95em; margin-right: 8px; min-width: 0; }
     #sendButton { padding: 8px 15px; font-size: 0.95em; }
 }

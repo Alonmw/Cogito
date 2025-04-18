@@ -1,5 +1,5 @@
 // frontend-web/script.js
-// v6: Dynamically set backend URL based on frontend hostname
+// Reverted to state after history/dynamic URL, before keyboard scroll fixes
 
 const chatbox = document.getElementById('chatbox');
 const userInput = document.getElementById('userInput');
@@ -10,7 +10,7 @@ const clearButton = document.getElementById('clearButton');
 // --- Configuration ---
 const PRODUCTION_FRONTEND_HOSTNAME = "socratic-questioner.vercel.app"; // Your production Vercel domain
 const PRODUCTION_BACKEND_URL = "https://socratic-questioner.onrender.com/api/dialogue"; // Your Production Render backend API URL
-const STAGING_BACKEND_URL = "https://socratic-questioner-dev.onrender.com/api/dialogue"; // CHANGE THIS to your actual Render STAGING backend API URL
+const STAGING_BACKEND_URL = "https://socratic-questioner-dev.onrender.com/api/dialogue"; // Your Render STAGING backend API URL
 
 // Determine backend URL based on where the frontend is running
 let backendUrl;
@@ -24,34 +24,18 @@ if (window.location.hostname === PRODUCTION_FRONTEND_HOSTNAME) {
 }
 // --- End Configuration ---
 
-
 // Conversation History Array
 let conversationHistory = []; // Stores { role: 'user' | 'assistant', content: '...' }
 
-// --- Debounce Function ---
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-};
-
 // Function to scroll chatbox to the bottom
 function scrollToBottom(triggerSource = 'unknown') {
-    const scrollHeight = chatbox.scrollHeight;
-    const scrollTop = chatbox.scrollTop;
-    const clientHeight = chatbox.clientHeight;
-    console.log(`ScrollToBottom called by: ${triggerSource}. H: ${scrollHeight}, Top: ${scrollTop}, ClientH: ${clientHeight}`);
-    chatbox.scrollTop = scrollHeight;
+    // Simple scroll to bottom
+    // console.log(`ScrollToBottom called by: ${triggerSource}. H: ${chatbox.scrollHeight}`); // Optional log
+    chatbox.scrollTop = chatbox.scrollHeight;
 }
 
 // Function to add a message to the chatbox AND history
-function addMessage(text, senderRole) {
+function addMessage(text, senderRole) { // senderRole should be 'user' or 'assistant'
     const messageElement = document.createElement('p');
     messageElement.textContent = text;
     messageElement.classList.add('message', senderRole === 'assistant' ? 'ai' : 'user');
@@ -67,6 +51,7 @@ function addMessage(text, senderRole) {
     }
 
     // Scroll to bottom whenever a new message is added
+    // Use setTimeout to ensure it happens after DOM update/paint
     setTimeout(() => scrollToBottom('addMessage'), 0);
 }
 
@@ -90,9 +75,8 @@ async function sendMessage() {
     setTimeout(() => scrollToBottom('sendMessage Indicator'), 0);
 
     try {
-        // --- Use the dynamically determined backendUrl ---
-        console.log(`Fetching from: ${backendUrl}`); // Log which backend is used
-        const response = await fetch(backendUrl, { // Use the variable here
+        console.log(`Fetching from: ${backendUrl}`);
+        const response = await fetch(backendUrl, { // Use the dynamic variable
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ history: conversationHistory }),
@@ -100,24 +84,6 @@ async function sendMessage() {
 
         // (Error handling remains the same)
         if (!response.ok) {
-             // Check specifically for CORS errors which might indicate backend CORS isn't set for staging URL
-             if (response.status === 0 || !response.ok) { // Status 0 can indicate CORS failure before response
-                 try {
-                    const errorData = await response.json();
-                    console.error('Error from backend:', response.status, errorData);
-                    // Display specific error if available
-                 } catch (parseError) {
-                     // If parsing fails, it might be a CORS issue where response is opaque
-                     console.error('CORS or Network Error likely. Status:', response.status, response.statusText);
-                     const errorElement = document.createElement('p');
-                     errorElement.textContent = `Error: Cannot reach backend. Check CORS config on staging backend or network issues.`;
-                     errorElement.classList.add('message', 'ai'); errorElement.style.color = 'red';
-                     chatbox.appendChild(errorElement);
-                     setTimeout(() => scrollToBottom('sendMessage CORS/Network Error'), 0);
-                     return; // Stop further processing
-                 }
-             }
-             // Handle other non-ok responses
              const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
              console.error('Error from backend:', response.status, errorData);
              const errorElement = document.createElement('p');
@@ -127,7 +93,6 @@ async function sendMessage() {
              setTimeout(() => scrollToBottom('sendMessage Error OK'), 0);
              return;
         }
-
         const data = await response.json();
         if (data.response) {
              addMessage(data.response, 'assistant');
@@ -140,10 +105,8 @@ async function sendMessage() {
              setTimeout(() => scrollToBottom('sendMessage Error Payload'), 0);
         }
     } catch (error) {
-        // This catch block often catches CORS preflight failures or network errors
         console.error('Error during fetch operation:', error);
          const errorElement = document.createElement('p');
-         // Provide a hint about CORS if it's a TypeError (common for CORS issues)
          const errorHint = error instanceof TypeError ? " (Possible CORS or Network issue)" : "";
          errorElement.textContent = `Error: Failed to get response from backend. Check browser console.${errorHint}`;
          errorElement.classList.add('message', 'ai'); errorElement.style.color = 'red';
@@ -154,19 +117,15 @@ async function sendMessage() {
     }
 }
 
-// --- Event Listeners (Keep as before) ---
+// --- Event Listeners ---
 sendButton.addEventListener('click', sendMessage);
 userInput.addEventListener('keypress', function(event) { if (event.key === 'Enter') { event.preventDefault(); sendMessage(); } });
 clearButton.addEventListener('click', () => { addInitialMessage(); });
-userInput.addEventListener('focus', () => { const focusScrollDelay = 150; console.log(`Input focused. Scheduling scroll in ${focusScrollDelay}ms.`); setTimeout(() => scrollToBottom('inputFocus'), focusScrollDelay); });
 
-// --- Visual Viewport Resize Listener (Keep as before) ---
-const handleViewportResize = debounce(() => { console.log('VisualViewport resize detected (debounced). Scheduling scroll.'); setTimeout(() => scrollToBottom('viewportResize'), 100); }, 150);
-if (window.visualViewport) { console.log("VisualViewport API supported. Adding resize listener."); window.visualViewport.addEventListener('resize', handleViewportResize); } else { console.log("VisualViewport API not supported."); }
+// --- REMOVED: Scroll attempt on Input Focus listener ---
+// --- REMOVED: Visual Viewport Resize Listener ---
+// --- REMOVED: Dynamic Viewport Height (--vh) Calculation ---
 
-// --- Dynamic Viewport Height (--vh) Calculation (Keep as before) ---
-function setViewportHeight() { let vh = window.innerHeight * 0.01; document.documentElement.style.setProperty('--vh', `${vh}px`); console.log(`Dynamic --vh set to: ${vh}px`); }
-window.addEventListener('resize', setViewportHeight); window.addEventListener('orientationchange', setViewportHeight); setViewportHeight();
 
 // --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', addInitialMessage);
