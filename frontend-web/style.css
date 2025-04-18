@@ -1,5 +1,5 @@
 /* frontend-web/style.css */
-/* v5: Added position: sticky to header */
+/* v6: Use position:fixed for header and input area */
 
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
 
@@ -15,13 +15,16 @@
     --text-color: var(--google-grey-900);
     --input-border-color: var(--google-grey-500);
     --message-ai-bg: var(--google-grey-200);
-    --message-user-bg: #e1f0ff; /* Lighter blue for user messages */
+    --message-user-bg: #e1f0ff;
+
+    /* Define estimated heights for fixed elements (adjust based on your actual padding/content) */
+    --header-height: 57px; /* Approx based on padding 14px*2 + line-height */
+    --input-area-height: 65px; /* Approx based on padding 15px*2 + input height */
 }
 
-/* Ensure html and body take full height */
+/* Remove overflow hidden from html */
 html {
     height: 100%;
-    overflow: hidden; /* Prevent scrolling on html */
 }
 
 body {
@@ -29,29 +32,36 @@ body {
     background-color: var(--background-color);
     color: var(--text-color);
     margin: 0;
-    display: flex;
-    flex-direction: column;
-    height: 100%; /* Use 100% instead of 100vh */
+    height: 100%;
     box-sizing: border-box;
-    overflow: hidden; /* Prevent scrolling on body */
+    /* Add padding to prevent content from going under fixed header/footer */
+    padding-top: var(--header-height);
+    padding-bottom: var(--input-area-height);
+    /* Body itself no longer needs to be flex container for main layout */
+    overflow: hidden; /* Prevent body scroll */
 }
 
 /* Header Styling */
 header {
+    /* --- Use fixed positioning --- */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%; /* Or right: 0; */
+    z-index: 10;
+    height: var(--header-height); /* Use defined height */
+    box-sizing: border-box; /* Include padding/border in height */
+    /* --- End fixed positioning --- */
+
     padding: 14px 24px;
     border-bottom: 1px solid var(--google-grey-300);
-    background-color: var(--background-color); /* Background needed for sticky */
+    background-color: var(--background-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-shrink: 0; /* Prevent header from shrinking */
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-
-    /* --- Add sticky positioning --- */
-    position: sticky;
-    top: 0;
-    z-index: 10; /* Ensure it stays above chat content */
-    /* --- End sticky positioning --- */
+    /* Removed flex-shrink */
+    /* Removed position: sticky */
 }
 
 header h1 {
@@ -62,7 +72,7 @@ header h1 {
     line-height: 1.5;
 }
 
-/* Refined Clear Button Styling */
+/* Refined Clear Button Styling (no changes needed) */
 #clearButton {
     background-color: transparent;
     border: none;
@@ -75,27 +85,22 @@ header h1 {
     margin-left: 16px;
     transition: background-color 0.2s ease, color 0.2s ease;
 }
-
-#clearButton:hover {
-    background-color: var(--google-grey-100);
-    color: var(--google-grey-900);
-}
-
-#clearButton:active {
-    background-color: var(--google-grey-200);
-}
+#clearButton:hover { background-color: var(--google-grey-100); color: var(--google-grey-900); }
+#clearButton:active { background-color: var(--google-grey-200); }
 
 /* Main chat area container */
+/* This now needs to fill the padded body space */
 #chatboxContainer {
-    flex-grow: 1;
-    min-height: 0;
-    overflow: hidden;
+    height: 100%; /* Fill the padded body height */
+    box-sizing: border-box;
+    overflow: hidden; /* Contain the scrolling chatbox */
     padding: 0 24px;
     display: flex;
     flex-direction: column;
+    /* Removed flex-grow, min-height */
 }
 
-/* Loading Indicator Styling */
+/* Loading Indicator Styling (no changes needed) */
 #loadingIndicator {
     text-align: center;
     padding: 15px 0;
@@ -106,44 +111,36 @@ header h1 {
 
 /* Chatbox Styling */
 #chatbox {
-    flex-grow: 1;
-    overflow-y: auto; /* Only this part should scroll */
+    flex-grow: 1; /* Grow to fill chatboxContainer */
+    overflow-y: auto; /* Enable scrolling ONLY for messages */
     padding: 10px 0;
+    min-height: 0; /* Allow shrinking if needed within flex */
 }
 
-/* Message Styling */
-.message {
-    margin-bottom: 12px;
-    padding: 10px 14px;
-    border-radius: 18px;
-    max-width: 75%;
-    line-height: 1.4;
-    word-wrap: break-word;
-    box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.05);
-}
-
-.user {
-    background-color: var(--message-user-bg);
-    color: var(--google-grey-900);
-    margin-left: auto;
-    border-bottom-right-radius: 4px;
-}
-
-.ai {
-    background-color: var(--message-ai-bg);
-    color: var(--google-grey-900);
-    margin-right: auto;
-    border-bottom-left-radius: 4px;
-}
+/* Message Styling (no changes needed) */
+.message { margin-bottom: 12px; padding: 10px 14px; border-radius: 18px; max-width: 75%; line-height: 1.4; word-wrap: break-word; box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.05); }
+.user { background-color: var(--message-user-bg); color: var(--google-grey-900); margin-left: auto; border-bottom-right-radius: 4px; }
+.ai { background-color: var(--message-ai-bg); color: var(--google-grey-900); margin-right: auto; border-bottom-left-radius: 4px; }
 
 /* Input Area Styling */
 #inputArea {
+    /* --- Use fixed positioning --- */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%; /* Or right: 0; */
+    z-index: 10;
+    height: var(--input-area-height); /* Use defined height */
+    box-sizing: border-box; /* Include padding/border in height */
+     /* --- End fixed positioning --- */
+
     display: flex;
-    padding: 15px 24px;
+    align-items: center; /* Vertically center items in input area */
+    padding: 10px 24px; /* Adjusted padding slightly */
     border-top: 1px solid var(--google-grey-300);
     background-color: var(--background-color);
-    flex-shrink: 0;
     box-shadow: 0 -1px 2px 0 rgba(0, 0, 0, 0.03);
+    /* Removed flex-shrink */
 }
 
 #userInput {
@@ -155,65 +152,40 @@ header h1 {
     margin-right: 10px;
     line-height: 1.4;
 }
+#userInput:focus { outline: none; border-color: var(--google-blue); box-shadow: 0 0 0 1px var(--google-blue); }
 
-#userInput:focus {
-    outline: none;
-    border-color: var(--google-blue);
-    box-shadow: 0 0 0 1px var(--google-blue);
-}
+/* Send Button Styling (no changes needed) */
+#sendButton { padding: 10px 20px; border: none; background-color: var(--google-blue); color: white; border-radius: 18px; font-size: 1em; font-weight: 500; cursor: pointer; transition: background-color 0.2s ease; }
+#sendButton:hover { background-color: #185abc; }
+#sendButton:active { background-color: #144a9c; }
 
-/* Send Button Styling */
-#sendButton {
-    padding: 10px 20px;
-    border: none;
-    background-color: var(--google-blue);
-    color: white;
-    border-radius: 18px;
-    font-size: 1em;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-#sendButton:hover {
-    background-color: #185abc;
-}
-
-#sendButton:active {
-    background-color: #144a9c;
-}
-
-/* Optional: Style scrollbar (Webkit) */
-#chatbox::-webkit-scrollbar {
-    width: 8px;
-}
-#chatbox::-webkit-scrollbar-track {
-    background: transparent;
-}
-#chatbox::-webkit-scrollbar-thumb {
-    background-color: var(--google-grey-300);
-    border-radius: 4px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-}
-#chatbox::-webkit-scrollbar-thumb:hover {
-    background-color: var(--google-grey-500);
-}
+/* Scrollbar Styling (no changes needed) */
+#chatbox::-webkit-scrollbar { width: 8px; }
+#chatbox::-webkit-scrollbar-track { background: transparent; }
+#chatbox::-webkit-scrollbar-thumb { background-color: var(--google-grey-300); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+#chatbox::-webkit-scrollbar-thumb:hover { background-color: var(--google-grey-500); }
 
 
 /* ================================== */
 /* Responsive Styles for Mobile       */
-/* (Keep the existing media query)    */
 /* ================================== */
 @media (max-width: 600px) {
-    /* (Keep existing mobile styles from mobile_css_v2) */
-    header { padding: 10px 16px; }
+    /* Adjust fixed heights and padding if necessary */
+    :root {
+        --header-height: 50px; /* Example: Slightly smaller header on mobile */
+        --input-area-height: 60px; /* Example: Slightly smaller input on mobile */
+    }
+
+    header { padding: 10px 16px; height: var(--header-height); } /* Use variable */
     header h1 { font-size: 1.1em; }
     #clearButton { padding: 6px 8px; font-size: 0.85em; }
+
     #chatboxContainer { padding: 0 16px; }
     #loadingIndicator { padding: 10px 0; font-size: 0.9em; }
+
     .message { max-width: 85%; padding: 8px 12px; font-size: 0.95em; }
-    #inputArea { padding: 10px 16px; flex-wrap: wrap; }
+
+    #inputArea { padding: 8px 16px; height: var(--input-area-height); } /* Use variable */
     #userInput { padding: 8px 12px; font-size: 0.95em; margin-right: 8px; min-width: 0; }
     #sendButton { padding: 8px 15px; font-size: 0.95em; }
 }
