@@ -10,7 +10,7 @@ const clearButton = document.getElementById('clearButton');
 // --- Configuration ---
 const PRODUCTION_FRONTEND_HOSTNAME = "socratic-questioner.vercel.app"; // Your production Vercel domain
 const PRODUCTION_BACKEND_URL = "https://socratic-questioner.onrender.com/api/dialogue"; // Your Production Render backend API URL
-const STAGING_BACKEND_URL = "https://socratic-questioner-dev.onrender.com"; // CHANGE THIS to your actual Render STAGING backend API URL
+const STAGING_BACKEND_URL = "https://socratic-questioner-dev.onrender.com/api/dialogue"; // CHANGE THIS to your actual Render STAGING backend API URL
 
 // Determine backend URL based on where the frontend is running
 let backendUrl;
