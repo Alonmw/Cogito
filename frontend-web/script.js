@@ -62,7 +62,7 @@ function addMessage(text, senderRole) { // senderRole should be 'user' or 'assis
 
 // Function to display the initial AI message and add to history
 function addInitialMessage() {
-    const initialMessage = "Hello! What topic is on your mind today?";
+    const initialMessage = "?";
     chatbox.innerHTML = ''; // Clear visual chat
     conversationHistory = []; // Clear history array
     addMessage(initialMessage, 'assistant');
@@ -147,23 +147,16 @@ userInput.addEventListener('focus', () => {
     setTimeout(() => scrollToBottom('inputFocus'), focusScrollDelay);
 });
 
-// --- Visual Viewport Resize Listener ---
-const handleViewportResize = debounce(() => {
-    // This function will run ~150ms after the *last* resize event
-    console.log('VisualViewport resize detected (debounced). Scheduling scroll.');
-    // Use a short delay after the debounced event fires
-    setTimeout(() => scrollToBottom('viewportResize'), 50);
-}, 150); // Debounce wait time in ms (adjust if needed)
-
-// Check if VisualViewport API is supported
-if (window.visualViewport) {
-    console.log("VisualViewport API supported. Adding resize listener.");
-    window.visualViewport.addEventListener('resize', handleViewportResize);
-} else {
-    console.log("VisualViewport API not supported. Relying on focus/addMessage scroll.");
+// dynamic-vh.js
+function setViewportHeight() {
+  let vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
 }
 
-
+// Call on load and on resize
+window.addEventListener('resize', setViewportHeight);
+window.addEventListener('orientationchange', setViewportHeight);
+setViewportHeight();
 // --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', addInitialMessage);
 
