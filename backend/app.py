@@ -84,7 +84,7 @@ def handle_dialogue():
         try:
             print(f"Sending {len(messages_for_openai)} messages to OpenAI.")
             completion = client.chat.completions.create(
-                model="gpt-4-turbo", # Or your chosen model
+                model="gpt-4o-mini", # Or your chosen model
                 messages=messages_for_openai,
                 temperature=0.7,
                 max_tokens=100 # Adjust if needed
