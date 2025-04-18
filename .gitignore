@@ -1,0 +1,49 @@
+# Environment variables
+# Ignore .env files in root and backend to protect secrets
+.env
+backend/.env
+
+# Python / Virtual Environment
+# Ignore the virtual environment directory itself
+.venv/
+# Ignore Python bytecode and cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+# Ignore distribution / packaging artifacts
+build/
+dist/
+*.egg-info/
+*.egg
+*.whl
+
+# Database files
+# Ignore the instance folder and common SQLite file extensions
+instance/
+backend/instance/
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal # SQLite transaction journals
+
+# IDE specific files (PyCharm example)
+.idea/
+*.iml
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+*.log.*
+
+# Node modules (Uncomment if you add Node.js to frontend later)
+# frontend-web/node_modules/
+
+# Frontend Build artifacts (Uncomment if you add build steps later)
+# frontend-web/dist/
+# frontend-web/build/
+
+# Add any other files or folders you want Git to ignore

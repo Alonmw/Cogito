@@ -3,3 +3,6 @@ openai
 python-dotenv
 Flask-CORS
 gunicorn
+Flask-SQLAlchemy
+Flask-Bcrypt
+Flask-JWT-Extended
