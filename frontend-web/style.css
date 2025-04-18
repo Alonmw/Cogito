@@ -1,5 +1,5 @@
 /* frontend-web/style.css */
-/* Combined and Refined Styles - v2 (Keyboard Adjust) */
+/* v5: Added position: sticky to header */
 
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
 
@@ -40,12 +40,18 @@ body {
 header {
     padding: 14px 24px;
     border-bottom: 1px solid var(--google-grey-300);
-    background-color: var(--background-color);
+    background-color: var(--background-color); /* Background needed for sticky */
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0; /* Prevent header from shrinking */
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+
+    /* --- Add sticky positioning --- */
+    position: sticky;
+    top: 0;
+    z-index: 10; /* Ensure it stays above chat content */
+    /* --- End sticky positioning --- */
 }
 
 header h1 {
@@ -81,12 +87,12 @@ header h1 {
 
 /* Main chat area container */
 #chatboxContainer {
-    flex-grow: 1; /* Allow container to take up remaining space */
-    min-height: 0; /* Crucial: Allows the container to shrink below its content size */
-    overflow: hidden; /* Hide overflow from container itself */
+    flex-grow: 1;
+    min-height: 0;
+    overflow: hidden;
     padding: 0 24px;
     display: flex;
-    flex-direction: column; /* Stack loading indicator and chatbox */
+    flex-direction: column;
 }
 
 /* Loading Indicator Styling */
@@ -95,16 +101,14 @@ header h1 {
     padding: 15px 0;
     color: var(--google-grey-700);
     font-style: italic;
-    flex-shrink: 0; /* Prevent shrinking */
-    /* display: none; is handled by JS */
+    flex-shrink: 0;
 }
 
 /* Chatbox Styling */
 #chatbox {
-    flex-grow: 1; /* Allow chatbox to fill the container */
-    overflow-y: auto; /* Enable scrolling only for messages */
+    flex-grow: 1;
+    overflow-y: auto; /* Only this part should scroll */
     padding: 10px 0;
-    /* height: 100%; might not be needed if flex-grow is used correctly */
 }
 
 /* Message Styling */
@@ -138,7 +142,7 @@ header h1 {
     padding: 15px 24px;
     border-top: 1px solid var(--google-grey-300);
     background-color: var(--background-color);
-    flex-shrink: 0; /* Prevent input area from shrinking */
+    flex-shrink: 0;
     box-shadow: 0 -1px 2px 0 rgba(0, 0, 0, 0.03);
 }
 
@@ -202,61 +206,14 @@ header h1 {
 /* (Keep the existing media query)    */
 /* ================================== */
 @media (max-width: 600px) {
-
-    body {
-        /* Prevent potential horizontal scroll issues on some mobile browsers */
-        /* overflow-x: hidden; -- Already handled by body overflow:hidden */
-    }
-
-    header {
-        padding: 10px 16px; /* Reduce header padding */
-        flex-wrap: wrap; /* Allow items to wrap if needed, though unlikely here */
-    }
-
-    header h1 {
-        font-size: 1.1em; /* Slightly smaller title */
-    }
-
-    #clearButton {
-        padding: 6px 8px; /* Slightly smaller padding */
-        font-size: 0.85em;
-    }
-
-    #chatboxContainer {
-        padding: 0 16px; /* Reduce horizontal padding */
-    }
-
-    #loadingIndicator {
-        padding: 10px 0; /* Reduce padding */
-        font-size: 0.9em;
-    }
-
-    .message {
-        max-width: 85%; /* Allow messages to take slightly more width */
-        padding: 8px 12px; /* Slightly reduce padding */
-        font-size: 0.95em; /* Slightly smaller message font */
-    }
-
-    #inputArea {
-        padding: 10px 16px; /* Reduce padding */
-        flex-wrap: wrap; /* Allow wrapping if input/button get too wide */
-    }
-
-    #userInput {
-        padding: 8px 12px; /* Reduce padding */
-        font-size: 0.95em;
-        margin-right: 8px; /* Slightly reduce margin */
-        min-width: 0; /* Allow input to shrink properly */
-    }
-
-    #sendButton {
-        padding: 8px 15px; /* Reduce padding */
-        font-size: 0.95em;
-    }
-
-    /* Optional: Hide scrollbar completely on mobile if desired (Webkit) */
-    /* #chatbox::-webkit-scrollbar {
-        display: none;
-    } */
+    /* (Keep existing mobile styles from mobile_css_v2) */
+    header { padding: 10px 16px; }
+    header h1 { font-size: 1.1em; }
+    #clearButton { padding: 6px 8px; font-size: 0.85em; }
+    #chatboxContainer { padding: 0 16px; }
+    #loadingIndicator { padding: 10px 0; font-size: 0.9em; }
+    .message { max-width: 85%; padding: 8px 12px; font-size: 0.95em; }
+    #inputArea { padding: 10px 16px; flex-wrap: wrap; }
+    #userInput { padding: 8px 12px; font-size: 0.95em; margin-right: 8px; min-width: 0; }
+    #sendButton { padding: 8px 15px; font-size: 0.95em; }
 }
-
