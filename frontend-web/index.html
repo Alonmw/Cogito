@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Socratic Partner MVP</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Chat UI</title>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
   <header>
@@ -13,16 +13,12 @@
   </header>
 
   <div id="chatboxContainer">
-    <div id="loadingIndicator" style="display: none;">
-      <i>Reasoning...</i>
-    </div>
-    <div id="chatbox">
-      <!-- Messages will be inserted here -->
-    </div>
+    <div id="chatbox"></div>
+    <div id="loadingIndicator" style="display: none;"><i>Reasoning...</i></div>
   </div>
 
   <div id="inputArea">
-    <input type="text" id="userInput" placeholder="Type your message here..." />
+    <input type="text" id="userInput" placeholder="Type your message...">
     <button id="sendButton">Send</button>
   </div>
 
