@@ -1,0 +1,37 @@
+/* src/index.css */
+
+/* 1. Import Fonts (Keep these at the top) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap');
+
+/* 2. Import Tailwind Styles */
+@import "tailwindcss";
+
+/* 3. Define Theme Customizations using @theme */
+@theme {
+  /* Define font variables - Tailwind v4 uses these CSS variables */
+  /* Add fallbacks like system-ui or sans-serif */
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-serif: "Noto Serif", serif;
+
+  /* Optional: Define a specific title font if preferred over just serif */
+  /* --font-title: "Noto Serif", serif; */
+
+  /* You can add other theme customizations here later */
+  /* e.g., --color-brand: #ff00ff; */
+  /* e.g., --breakpoint-lg: 1100px; */
+}
+
+/* 4. Apply Base Body Styles */
+body {
+  /* Apply the default sans-serif font defined in @theme */
+  /* Tailwind v4 might apply base font automatically, but being explicit is safe */
+  @apply font-sans antialiased;
+
+  /* Add base text color from theme if needed, e.g. */
+  /* @apply text-gray-900 dark:text-gray-100; */
+  /* Tailwind v4 defaults might handle this better */
+}
+
+/* Remove all other boilerplate styles from the Vite template */
+
