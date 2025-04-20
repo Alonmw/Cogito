@@ -44,7 +44,7 @@ const Chatbox: React.FC<ChatboxProps> = ({ messages, isLoading }) => {
       {/* Loading Indicator */}
       {isLoading && (
          <div className="text-center p-4 text-gray-500 dark:text-gray-400">
-           <i>AI is thinking...</i>
+           <i>Reasoning...</i>
          </div>
       )}
 
