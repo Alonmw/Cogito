@@ -22,6 +22,7 @@ dist/
 # Ignore the instance folder and common SQLite file extensions
 instance/
 backend/instance/
+backend/secret/
 *.db
 *.sqlite
 *.sqlite3

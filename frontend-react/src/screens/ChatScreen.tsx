@@ -1,61 +1,103 @@
 // src/screens/ChatScreen.tsx
-// v3: Added isLoading state and passed it to Chatbox
+// v6: Implemented real handleSendMessage using API service
 
-import React, { useState } from 'react'; // Import useState
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Chatbox from '../components/Chatbox';
 import InputArea from '../components/InputArea';
-import { MessageData } from '../components/Message'; // Import MessageData type
+import { MessageData } from '../components/Message';
+// No longer need useAuth directly in this component if Header handles auth display/logout
+// import { useAuth } from '../context/AuthContext';
+import { postDialogue } from '../services/api'; // Import API function
 
-// Define props expected from App.tsx
-interface ChatScreenProps {
-  isGuest: boolean;
-  onLogout: () => void;
-}
+// Removed props interface
 
-const ChatScreen: React.FC<ChatScreenProps> = ({ isGuest, onLogout }) => {
-  // --- State for Messages and Loading ---
-  // Using dummy data initially for testing display
-  const [messages, setMessages] = useState<MessageData[]>([
-    { role: 'assistant', content: 'Hello! This is a test message.' },
-    { role: 'user', content: 'Hi there! This is my reply.' },
-    { role: 'assistant', content: 'Interesting. Tell me more.' },
-    { role: 'user', content: 'Just testing the scrolling behavior.' },
-    { role: 'assistant', content: 'Okay, does it scroll down?' },
-    { role: 'user', content: 'Let\'s see...' },
-    { role: 'assistant', content: 'The last message should be visible.' },
-  ]);
-  // Add isLoading state, default to false
+const ChatScreen: React.FC = () => {
+  // const { currentUser } = useAuth(); // Removed - Header uses context directly
+
+  // --- Real State for Chat ---
+  const [messages, setMessages] = useState<MessageData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   // --- End State ---
 
-  // --- Temporary Send Message Handler (for testing) ---
-  const handleSendMessage = (newMessageContent: string) => {
+  // Add initial message only once on mount
+  useEffect(() => {
+    setMessages([
+        { role: 'assistant', content: 'Greetings. I do not have answers, only questions. Shall we think something through together?' }
+    ]);
+  }, []);
+
+  // --- Real Send Message Handler ---
+  const handleSendMessage = async (newMessageContent: string) => {
+    setError(null); // Clear previous errors
     const newUserMessage: MessageData = { role: 'user', content: newMessageContent };
-    // Simulate adding user message and AI response after delay
-    setMessages(prev => [...prev, newUserMessage]);
+
+    // Add user message to state immediately for optimistic update
+    const currentMessages = [...messages, newUserMessage];
+    setMessages(currentMessages);
     setIsLoading(true); // Set loading true
-    setTimeout(() => {
-      const aiResponse: MessageData = { role: 'assistant', content: `AI reply to: ${newMessageContent}`};
-      setMessages(prev => [...prev, aiResponse]);
+
+    try {
+      // Prepare history for API (current messages array)
+      const historyForApi = currentMessages;
+
+      // Call the API service function
+      // api.ts (api_service_v4) handles getting/adding the auth token internally
+      const data = await postDialogue(historyForApi);
+
+      if (data && data.response) {
+        const aiResponse: MessageData = { role: 'assistant', content: data.response };
+        setMessages(prev => [...prev, aiResponse]); // Add AI response
+      } else {
+         // Handle case where API returns success but no response content
+         setError("Received an empty or invalid response from the AI.");
+         // Remove the optimistic user message if AI response fails? Optional.
+         // setMessages(messages);
+      }
+
+    } catch (err: any) {
+      console.error("Error calling dialogue API:", err);
+      // Display error message to the user
+      setError(err.message || "An error occurred while fetching the response.");
+      // Remove the optimistic user message when the API call fails
+      setMessages(messages); // Revert to state before optimistic update
+    } finally {
       setIsLoading(false); // Set loading false
-    }, 1500); // Simulate 1.5 second delay
+    }
   };
-  // --- End Temporary Handler ---
+  // --- End Send Message Handler ---
+
+  // --- Clear Chat Handler ---
+  const handleClearChat = () => {
+      console.log("Clearing chat");
+      // Reset messages to only the initial greeting
+       setMessages([
+           { role: 'assistant', content: 'Greetings. I do not have answers, only questions. Shall we think something through together?' }
+       ]);
+       setError(null); // Clear errors as well
+  };
+  // --- End Clear Chat Handler ---
+
 
   return (
     // Main container for the chat screen
     <div className="flex flex-col h-full overflow-hidden">
-      <Header
-        isGuest={isGuest}
-        onLogout={onLogout}
-        // Add other props like onClearChat later
-      />
+      {/* Pass handleClearChat to Header */}
+      {/* Header gets auth state directly from context */}
+      <Header onClearChat={handleClearChat} />
 
-      {/* Pass messages AND isLoading state down */}
+      {/* Display error above chatbox if exists */}
+      {error && (
+          <div className="p-2 bg-red-100 border-b border-red-300 text-red-700 text-center text-sm">
+              {error}
+          </div>
+      )}
+
+      {/* Pass real messages and isLoading state down */}
       <Chatbox messages={messages} isLoading={isLoading} />
 
-      {/* Pass temporary handler down */}
+      {/* Pass real handler down */}
       <InputArea onSendMessage={handleSendMessage} />
 
     </div>
