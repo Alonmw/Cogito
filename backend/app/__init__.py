@@ -3,6 +3,7 @@
 
 import os
 import firebase_admin
+import logging
 from firebase_admin import credentials
 from flask import Flask
 from openai import OpenAI
@@ -19,6 +20,10 @@ def create_app(config_class=Config):
     # Load Configuration
     app.config.from_object(config_class)
     print(f"Instance path: {app.instance_path}")
+
+    if not app.debug:
+        app.logger.setLevel(logging.INFO)
+        app.logger.info('Flask logger configured for INFO level.')
 
     # Ensure Instance Folder Exists
     try:
