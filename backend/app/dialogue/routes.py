@@ -1,28 +1,26 @@
 # backend/app/dialogue/routes.py
-# v2: Removed Flask-JWT-Extended imports and usage
+# v3: Added optional Firebase token verification
 
 from flask import Blueprint, request, jsonify, current_app
 from openai import OpenAIError
-# --- Removed JWT imports ---
-# from flask_jwt_extended import jwt_required, get_jwt_identity
-# --- End Removed Imports ---
+from ..auth.utils import verify_token # <-- Import the verification utility
 
 dialogue_bp = Blueprint('dialogue', __name__, url_prefix='/api')
 
-# --- Removed @jwt_required decorator ---
 @dialogue_bp.route('/dialogue', methods=['POST'])
-# --- End Removed Decorator ---
 def handle_dialogue():
-    """Handles incoming conversation history and gets the next Socratic response."""
+    """Handles incoming conversation history (verifying token if present)
+       and gets the next Socratic response."""
 
-    # --- Removed JWT identity logic ---
-    # current_user_id = get_jwt_identity() # Removed
-    # Determine user identifier (placeholder for now, replace with Firebase UID later)
-    # For logging purposes, we can use a placeholder or potentially info from request if available
-    user_log_id = "guest_or_unknown_user" # Placeholder
-    # We will add Firebase token verification here later to get the actual user ID
+    # --- Verify Firebase Token (Optional) ---
+    decoded_token = verify_token() # Attempt to verify token from header
+    current_user_id = decoded_token.get('uid') if decoded_token else None
+    user_log_id = f"user ID: {current_user_id}" if current_user_id else "guest user"
+    # Use UID for OpenAI user parameter if available, otherwise a generic identifier
+    openai_user_param = str(current_user_id) if current_user_id else f"guest_session_{request.remote_addr}" # Example guest ID
+
     current_app.logger.info(f"Dialogue request received from {user_log_id}")
-    # --- End Removed JWT identity logic ---
+    # --- End Token Verification ---
 
 
     # Access extensions and config via current_app proxy
@@ -57,15 +55,13 @@ def handle_dialogue():
 
         try:
             current_app.logger.debug(f"Sending {len(messages_for_openai)} messages to OpenAI for {user_log_id}.")
-            # Pass an identifier to OpenAI API (replace placeholder later)
-            openai_user_param = "guest_or_unknown_user_session_placeholder" # Placeholder
 
             completion = client.chat.completions.create(
                 model=current_app.config.get('OPENAI_MODEL', 'gpt-4-turbo'),
                 messages=messages_for_openai,
                 temperature=current_app.config.get('OPENAI_TEMPERATURE', 0.7),
                 max_tokens=current_app.config.get('OPENAI_MAX_TOKENS', 100),
-                user=openai_user_param
+                user=openai_user_param # Pass verified UID or guest identifier
             )
             ai_response = completion.choices[0].message.content.strip()
             current_app.logger.info(f"Received OpenAI response for {user_log_id}")
