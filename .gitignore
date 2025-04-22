@@ -29,7 +29,7 @@ Socratic-Web/etc/secret/
 *.db-journal # SQLite transaction journals
 
 # IDE specific files (PyCharm example)
-/.idea/
+.idea/
 *.iml
 
 # Operating System files
