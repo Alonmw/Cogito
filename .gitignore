@@ -1,11 +1,12 @@
 # Environment variables
 # Ignore .env files in root and backend to protect secrets
 .env
-backend/.env
+Socratic-Web/backend/.env
+Socratic-Web/frontend-react/.env
 
 # Python / Virtual Environment
 # Ignore the virtual environment directory itself
-.venv/
+Socratic-Web/.venv/
 # Ignore Python bytecode and cache
 __pycache__/
 *.py[cod]
@@ -20,19 +21,20 @@ dist/
 
 # Database files
 # Ignore the instance folder and common SQLite file extensions
-instance/
-backend/instance/
-etc/secret/
+Socratic-Web/backend/instance/
+Socratic-Web/etc/secret/
 *.db
 *.sqlite
 *.sqlite3
 *.db-journal # SQLite transaction journals
 
 # IDE specific files (PyCharm example)
+Socratic-Web/.idea/
 .idea/
 *.iml
 
 # Operating System files
+Socratic-Web/.Ds_store
 .DS_Store
 Thumbs.db
 
