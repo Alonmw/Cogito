@@ -20,7 +20,8 @@
         "foregroundImage": "./src/assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "io.alonmw.Socratic_Questioner"
+      "package": "io.alonmw.Socratic_Questioner",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",
@@ -30,6 +31,7 @@
     "plugins": [
       "expo-router",
       "@react-native-firebase/app",
+      "@react-native-google-signin/google-signin",
       [
         "expo-splash-screen",
         {
