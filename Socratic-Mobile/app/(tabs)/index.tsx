@@ -1,121 +1,130 @@
-// app/index.tsx (or app/(tabs)/index.tsx if that's your main screen)
-import { Text, View, StyleSheet, Button, Platform, Alert } from 'react-native';
-import React, { useEffect, useState } from 'react'; // Keep useEffect/useState for non-auth state
+// app/(tabs)/index.tsx - Renaming conceptually to ChatScreen
+import React, { useState, useCallback } from 'react';
+import { StyleSheet, View, Text, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native'; // Added Alert
+import { useAuth } from '@/src/context/AuthContext';
 import { Colors } from '@/src/constants/Colors'; // Adjust path if needed
 import { useColorScheme } from '@/src/hooks/useColorScheme'; // Adjust path if needed
-import { checkBackendConnection } from '@/src/services/api'; // Adjust path if needed
 
-// --- Import useAuth hook ---
-import { useAuth } from '@/src/context/AuthContext'; // Adjust path if needed
+// --- Import Chat Components ---
+import MessageList from '@/src/components/MessageList'; // Adjust path if needed
+import ChatInput from '@/src/components/ChatInput';   // Adjust path if needed
 
-export default function IndexScreen() {
+// --- Import API Service ---
+import { postDialogue } from '@/src/services/api'; // Adjust path if needed
+
+// Define the structure for a message (can be shared in types/index.ts later)
+interface Message {
+  id: string; // Unique ID for each message
+  text: string;
+  sender: 'user' | 'assistant'; // Or 'bot', 'ai'
+  timestamp: Date;
+}
+
+export default function ChatScreen() {
   const colorScheme = useColorScheme();
-  const [connectionStatus, setConnectionStatus] = useState<string | null>(
-    'Checking connection...'
-  );
+  const { user } = useAuth(); // Get user info if needed
 
-  // --- Get auth state and functions from context ---
-  const {
-    user,
-    initializing,
-    isSigningIn,
-    signInError,
-    googleSignIn, // Use the function from context
-    signOut,      // Use the function from context
-  } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([]); // State to hold messages
+  const [inputText, setInputText] = useState(''); // State for the text input
+  const [isLoading, setIsLoading] = useState(false); // State for loading AI response
 
-  // --- Backend Connection Check (Keep existing useEffect) ---
-  useEffect(() => {
-    const testConnection = async () => {
-      const result = await checkBackendConnection();
-      setConnectionStatus(
-        result !== null
-          ? `Backend says: ${result}`
-          : 'Failed to connect to backend.'
-      );
+  // Function to handle sending a message
+  const handleSend = useCallback(async () => {
+    if (inputText.trim().length === 0 || isLoading || !user) {
+      // Also check if user exists before sending
+      if (!user) Alert.alert("Error", "You must be logged in to chat.");
+      return;
+    }
+
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      text: inputText.trim(),
+      sender: 'user',
+      timestamp: new Date(),
     };
-    testConnection();
-  }, []);
 
-  // --- Removed Firebase Auth State Listener (Handled by AuthContext) ---
-  // --- Removed onGoogleButtonPress Function (Handled by AuthContext) ---
-  // --- Removed onSignOutPress Function (Handled by AuthContext) ---
+    // Combine current history with the new user message for the API call
+    const currentHistory = [...messages, userMessage];
+
+    // Optimistically update the UI
+    setMessages(currentHistory);
+    setInputText('');
+    setIsLoading(true);
+
+    // --- Call Real API Service ---
+    try {
+      const responseText = await postDialogue(currentHistory); // Pass the updated history
+
+      if (responseText) {
+        const aiResponse: Message = {
+          id: `assistant-${Date.now()}`,
+          text: responseText,
+          sender: 'assistant',
+          timestamp: new Date(),
+        };
+        // Add the AI response to the message list
+        setMessages((prevMessages) => [...prevMessages, aiResponse]);
+      } else {
+        // Handle case where API returned null (error occurred)
+        Alert.alert("Error", "Failed to get response from assistant.");
+        // Optional: Remove the user's optimistic message if the API call failed
+        // setMessages((prevMessages) => prevMessages.slice(0, -1));
+      }
+    } catch (error) {
+      // Catch any unexpected errors from the API call itself
+      console.error("Error in handleSend calling postDialogue:", error);
+      Alert.alert("Error", "An unexpected error occurred.");
+      // Optional: Remove the user's optimistic message
+      // setMessages((prevMessages) => prevMessages.slice(0, -1));
+    } finally {
+      // Ensure loading indicator is turned off regardless of success/failure
+      setIsLoading(false);
+    }
+    // --- End API Call ---
+
+  }, [inputText, messages, isLoading, user]); // Added user dependency
 
 
-  // Show loading indicator while Firebase is initializing (from context)
-  if (initializing) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
-
-  // Main UI rendering
   return (
-    <View style={styles.container}>
-      <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
-        Welcome!
-      </Text>
-      <Text style={{ color: Colors[colorScheme ?? 'light'].text, marginTop: 10 }}>
-        Connection Status: {connectionStatus}
-      </Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+    >
+      <MessageList messages={messages} />
 
-      {/* Conditional rendering based on user state (from context) */}
-      {user ? (
-        // Show user info and Sign Out button if logged in
-        <View style={styles.userInfoContainer}>
-          <Text style={{ color: Colors[colorScheme ?? 'light'].text }}>
-            Welcome, {user.displayName || user.email}!
-          </Text>
-          {/* Use signOut function from context */}
-          <Button title="Sign Out" onPress={signOut} />
-        </View>
-      ) : (
-        // Show Sign In button if logged out
-        <View style={styles.signInContainer}>
-          {/* Use googleSignIn function from context */}
-          <Button
-            title="Sign in with Google"
-            onPress={googleSignIn}
-            disabled={isSigningIn} // Use isSigningIn state from context
-          />
-          {/* Show signing in indicator (from context) */}
-          {isSigningIn && <Text style={{marginTop: 10}}>Signing in...</Text>}
-          {/* Show error message if sign-in failed (from context) */}
-          {signInError && (
-            <Text style={styles.errorText}>Error: {signInError}</Text>
-          )}
+      {isLoading && (
+        <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].text}/>
+            <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Assistant is thinking...
+            </Text>
         </View>
       )}
-    </View>
+
+      <ChatInput
+        inputText={inputText}
+        setInputText={setInputText}
+        onSend={handleSend}
+        isLoading={isLoading}
+      />
+    </KeyboardAvoidingView>
   );
 }
 
-// Styles definition (Keep existing styles)
+// Styles remain the same
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
+  loadingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 5,
   },
-  userInfoContainer: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  signInContainer: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  errorText: {
-    color: 'red',
-    marginTop: 10,
-    textAlign: 'center',
+  loadingText: {
+    marginLeft: 5,
+    fontStyle: 'italic',
   },
 });
