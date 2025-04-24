@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "io.alonmw.Socratic-Questioner",
+      "bundleIdentifier": "io.alonmw.socratic-questioner",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -20,7 +20,7 @@
         "foregroundImage": "./src/assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "io.alonmw.Socratic_Questioner",
+      "package": "io.alonmw.socratic_questioner",
       "googleServicesFile": "./google-services.json"
     },
     "web": {

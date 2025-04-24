@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "839078547891",
+    "project_id": "socratic-questioner",
+    "storage_bucket": "socratic-questioner.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:839078547891:android:34097434329ba8f4f07bc6",
+        "android_client_info": {
+          "package_name": "io.alonmw.socratic_questioner"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "839078547891-ctpn6sn09qrh5vilt59nrtu33jr7i9jj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "io.alonmw.socratic_questioner",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "839078547891-73krf3ndqc67hp2d41ggpc12m84amduf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjLa1FDd5YFhier2XrnLZmNCDRuefAj3c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "839078547891-73krf3ndqc67hp2d41ggpc12m84amduf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

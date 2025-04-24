@@ -32,10 +32,16 @@ Socratic-Web/etc/secret/
 .idea/
 *.iml
 
+# Generated native directories (Expo Prebuild/CNG)
+/android/
+/ios/
+
 # Operating System files
 Socratic-Web/.Ds_store
 .DS_Store
 Thumbs.db
+Socratic-Mobile/android/
+Socratic-Mobile/ios/
 
 # Log files
 *.log
