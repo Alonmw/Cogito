@@ -10,13 +10,13 @@ import { Alert } from 'react-native'; // Keep Alert for errors
 const USER: User = {
     _id: 1, // Or use Firebase user.uid if available and consistent
     name: 'User', // Can be updated with user.displayName
-    // avatar: 'path/to/user/avatar.png' // Optional
+    // No avatar needed for clean UI
 };
 
 const ASSISTANT: User = {
     _id: 2, // Needs a unique ID for the assistant
     name: 'Socratic Partner',
-    // avatar: 'path/to/assistant/avatar.png' // Optional
+    // No avatar needed for clean UI
 };
 
 export default function ChatScreen() {
@@ -52,15 +52,12 @@ export default function ChatScreen() {
   // Map Gifted Chat's IMessage back to our API format
   const mapToApiHistory = (msgs: IMessage[]) => {
       return msgs
-          // --- Fixed Sort Logic ---
-          .sort((a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt)) // Sort descending (newest first in sorted array)
-          // --- End Fixed Sort Logic ---
           .map(msg => ({
               role: msg.user._id === USER._id ? 'user' : 'assistant',
               content: msg.text
-          }));
-      // IMPORTANT: Double-check if your backend expects newest message first or last in the history array.
-      // If it expects oldest first, change sort to: .sort((a, b) => getTimestamp(a.createdAt) - getTimestamp(b.createdAt))
+          }))
+          // Reverse the mapped array to get chronological order for API
+          .reverse(); // Assuming GiftedChat state has newest first
   };
 
   // Function called when the user presses the send button in Gifted Chat
@@ -71,58 +68,59 @@ export default function ChatScreen() {
     }
 
     // Append the new user message(s) sent from Gifted Chat UI
-    // Use a functional update to ensure we have the latest state
     let updatedMessages: IMessage[] = [];
     setMessages((previousMessages) => {
         updatedMessages = GiftedChat.append(previousMessages, newMessages);
         return updatedMessages;
     });
 
-    setIsLoading(true); // Show loading indicator
+    setIsLoading(true);
 
     // Prepare history for API call using the latest state
-    const currentHistory = mapToApiHistory(updatedMessages); // Use the updated state
+    const apiHistory = mapToApiHistory(updatedMessages); // Use the updated state
 
     try {
-      console.log('[API Call] Sending history:', currentHistory);
-      const responseText = await postDialogue(currentHistory as any); // Cast if needed, ensure postDialogue accepts correct format
+      console.log('[API Call] Sending history (chronological):', apiHistory);
+      const responseText = await postDialogue(apiHistory as any); // Cast if needed
 
       if (responseText) {
         const aiResponse: IMessage = {
-          _id: `assistant-${Date.now()}`, // Generate unique ID
+          _id: `assistant-${Date.now()}`,
           text: responseText,
           createdAt: new Date(),
-          user: ASSISTANT, // Use the assistant user object
+          user: ASSISTANT,
         };
-        // Append the AI response
         setMessages((previousMessages) =>
-          GiftedChat.append(previousMessages, [aiResponse]), // Append requires an array
+          GiftedChat.append(previousMessages, [aiResponse]),
         );
       } else {
         Alert.alert("Error", "Failed to get response from assistant.");
-        // Optional: Handle UI feedback for error (e.g., add an error message to the chat)
       }
     } catch (error) {
       console.error("Error in onSend calling postDialogue:", error);
       Alert.alert("Error", "An unexpected error occurred.");
-      // Optional: Handle UI feedback for error
     } finally {
       setIsLoading(false);
     }
-  }, [user, isLoading]); // Removed messages from dependency array, using functional update instead
+  }, [user, isLoading]);
 
   return (
     <View style={styles.container}>
       <GiftedChat
         messages={messages}
         onSend={newMessages => onSend(newMessages)}
-        user={USER} // Tell Gifted Chat who the current user is
-        isLoadingEarlier={isLoading} // Can be used for loading history indicator
-        isTyping={isLoading} // Show typing indicator while waiting for AI
+        user={USER}
+        isTyping={isLoading}
         placeholder="Type your message..."
         alwaysShowSend
+        // --- UI Customization Props ---
+        renderTime={() => null} // Hide the timestamp below messages
+        renderDay={() => null} // Hide the date separator (e.g., "Today")
+        showUserAvatar={false} // Hide the user's avatar circle (redundant with renderAvatar)
+        renderAvatar={() => null} // Hide ALL avatars
+        showAvatarForEveryMessage={false}
+        // --- End UI Customization ---
       />
-      {/* KeyboardAvoidingView might be needed depending on specific layout issues */}
     </View>
   );
 }
