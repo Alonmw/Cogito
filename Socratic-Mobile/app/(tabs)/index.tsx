@@ -1,51 +1,50 @@
-// app/(tabs)/index.tsx - Using Gifted Chat
+// app/(tabs)/index.tsx - Using Gifted Chat & Header
 import React, { useState, useCallback, useEffect } from 'react';
-import { StyleSheet, View, Platform } from 'react-native'; // Removed KeyboardAvoidingView, Text, Button etc.
-import { GiftedChat, IMessage, User } from 'react-native-gifted-chat'; // Import Gifted Chat components
+import { StyleSheet, View, Platform, SafeAreaView } from 'react-native'; // Added SafeAreaView, Removed others
+import { GiftedChat, IMessage, User } from 'react-native-gifted-chat';
 import { useAuth } from '@/src/context/AuthContext';
-import { postDialogue } from '@/src/services/api'; // Import your API service
-import { Alert } from 'react-native'; // Keep Alert for errors
+import { postDialogue } from '@/src/services/api';
+import { Alert } from 'react-native';
+import { Colors } from '@/src/constants/Colors'; // Import Colors
+import { useColorScheme } from '@/src/hooks/useColorScheme'; // Import useColorScheme
+
+// --- Import Custom Header ---
+import ChatHeader from '@/src/components/ChatHeader'; // Adjust path if needed
 
 // Define user objects for Gifted Chat
 const USER: User = {
-    _id: 1, // Or use Firebase user.uid if available and consistent
-    name: 'User', // Can be updated with user.displayName
-    // No avatar needed for clean UI
+    _id: 1,
+    name: 'User',
 };
 
 const ASSISTANT: User = {
-    _id: 2, // Needs a unique ID for the assistant
+    _id: 2,
     name: 'Socratic Partner',
-    // No avatar needed for clean UI
 };
 
 export default function ChatScreen() {
-  const { user } = useAuth(); // Get Firebase user
-  const [messages, setMessages] = useState<IMessage[]>([]); // State uses Gifted Chat's IMessage type
-  const [isLoading, setIsLoading] = useState(false); // State for loading AI response
+  const { user } = useAuth();
+  const colorScheme = useColorScheme(); // Get current color scheme
+  const [messages, setMessages] = useState<IMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Optional: Set initial message or load history when component mounts
+  // Initial greeting message
+  const initialMessage: IMessage = {
+    _id: 1,
+    text: 'Hello! How can I help you explore your thoughts today?',
+    createdAt: new Date(),
+    user: ASSISTANT,
+  };
+
   useEffect(() => {
-    setMessages([
-      {
-        _id: 1, // Unique ID for the message
-        text: 'Hello! How can I help you explore your thoughts today?',
-        createdAt: new Date(),
-        user: ASSISTANT, // Use the assistant user object
-      },
-    ]);
+    setMessages([initialMessage]);
   }, []);
 
 
   // Helper function to get numeric timestamp
   const getTimestamp = (dateOrNumber: Date | number | undefined): number => {
-      if (dateOrNumber instanceof Date) {
-          return dateOrNumber.getTime();
-      }
-      if (typeof dateOrNumber === 'number') {
-          return dateOrNumber;
-      }
-      // Fallback for undefined or unexpected type
+      if (dateOrNumber instanceof Date) return dateOrNumber.getTime();
+      if (typeof dateOrNumber === 'number') return dateOrNumber;
       return 0;
   };
 
@@ -56,18 +55,16 @@ export default function ChatScreen() {
               role: msg.user._id === USER._id ? 'user' : 'assistant',
               content: msg.text
           }))
-          // Reverse the mapped array to get chronological order for API
-          .reverse(); // Assuming GiftedChat state has newest first
+          .reverse(); // Reverse for chronological order for API
   };
 
-  // Function called when the user presses the send button in Gifted Chat
+  // Function called when the user presses the send button
   const onSend = useCallback(async (newMessages: IMessage[] = []) => {
     if (!user || isLoading) {
         if (!user) Alert.alert("Error", "You must be logged in to chat.");
         return;
     }
 
-    // Append the new user message(s) sent from Gifted Chat UI
     let updatedMessages: IMessage[] = [];
     setMessages((previousMessages) => {
         updatedMessages = GiftedChat.append(previousMessages, newMessages);
@@ -75,13 +72,11 @@ export default function ChatScreen() {
     });
 
     setIsLoading(true);
-
-    // Prepare history for API call using the latest state
-    const apiHistory = mapToApiHistory(updatedMessages); // Use the updated state
+    const apiHistory = mapToApiHistory(updatedMessages);
 
     try {
       console.log('[API Call] Sending history (chronological):', apiHistory);
-      const responseText = await postDialogue(apiHistory as any); // Cast if needed
+      const responseText = await postDialogue(apiHistory as any);
 
       if (responseText) {
         const aiResponse: IMessage = {
@@ -104,24 +99,33 @@ export default function ChatScreen() {
     }
   }, [user, isLoading]);
 
+  // --- Function to clear chat messages ---
+  const handleClearChat = useCallback(() => {
+      // Reset messages, keeping only the initial greeting
+      setMessages([initialMessage]);
+  }, [initialMessage]); // Include initialMessage dependency
+
   return (
-    <View style={styles.container}>
-      <GiftedChat
-        messages={messages}
-        onSend={newMessages => onSend(newMessages)}
-        user={USER}
-        isTyping={isLoading}
-        placeholder="Type your message..."
-        alwaysShowSend
-        // --- UI Customization Props ---
-        renderTime={() => null} // Hide the timestamp below messages
-        renderDay={() => null} // Hide the date separator (e.g., "Today")
-        showUserAvatar={false} // Hide the user's avatar circle (redundant with renderAvatar)
-        renderAvatar={() => null} // Hide ALL avatars
-        showAvatarForEveryMessage={false}
-        // --- End UI Customization ---
-      />
-    </View>
+    // Use SafeAreaView to avoid notches/status bars
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        {/* Render the custom header */}
+        <ChatHeader onClearChat={handleClearChat} />
+
+        {/* GiftedChat takes the remaining space */}
+        <GiftedChat
+            messages={messages}
+            onSend={newMessages => onSend(newMessages)}
+            user={USER}
+            isTyping={isLoading}
+            placeholder="Type your message..."
+            alwaysShowSend
+            renderTime={() => null}
+            renderDay={() => null}
+            renderAvatar={() => null}
+            showAvatarForEveryMessage={false}
+            // GiftedChat includes its own KeyboardAvoidingView handling usually
+        />
+    </SafeAreaView>
   );
 }
 
@@ -129,6 +133,7 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff', // Example background color
+    // backgroundColor is set dynamically now
   },
+  // Removed loading styles as GiftedChat has isTyping prop
 });
