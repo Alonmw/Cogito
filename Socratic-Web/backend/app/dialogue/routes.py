@@ -1,23 +1,35 @@
 # backend/app/dialogue/routes.py
-# v3: Added optional Firebase token verification
+# v4: Made Firebase token verification mandatory
 
 from flask import Blueprint, request, jsonify, current_app
 from openai import OpenAIError
-from ..auth.utils import verify_token # <-- Import the verification utility
+# Assuming verify_token is in auth.utils and handles errors/None return
+from ..auth.utils import verify_token
 
 dialogue_bp = Blueprint('dialogue', __name__, url_prefix='/api')
 
 @dialogue_bp.route('/dialogue', methods=['POST'])
 def handle_dialogue():
-    """Handles incoming conversation history (verifying token if present)
+    """Handles incoming conversation history (verifying token is mandatory)
        and gets the next Socratic response."""
 
-    # --- Verify Firebase Token (Optional) ---
+    # --- Verify Firebase Token (Mandatory) ---
     decoded_token = verify_token() # Attempt to verify token from header
-    current_user_id = decoded_token.get('uid') if decoded_token else None
-    user_log_id = f"user ID: {current_user_id}" if current_user_id else "guest user"
-    # Use UID for OpenAI user parameter if available, otherwise a generic identifier
-    openai_user_param = str(current_user_id) if current_user_id else f"guest_session_{request.remote_addr}" # Example guest ID
+
+    # If token is missing or invalid, verify_token should ideally return None
+    if not decoded_token:
+        current_app.logger.warning("Unauthorized dialogue request: Missing or invalid token.")
+        # Return 401 Unauthorized (or 403 Forbidden)
+        return jsonify({"error": "Authorization required: Invalid or missing token."}), 401
+
+    current_user_id = decoded_token.get('uid')
+    # If UID is somehow missing after successful decode (shouldn't happen with Firebase)
+    if not current_user_id:
+         current_app.logger.error("Token decoded successfully but UID missing.")
+         return jsonify({"error": "Invalid token payload."}), 401
+
+    user_log_id = f"user ID: {current_user_id}"
+    openai_user_param = str(current_user_id) # Use verified UID for OpenAI user parameter
 
     current_app.logger.info(f"Dialogue request received from {user_log_id}")
     # --- End Token Verification ---
@@ -53,6 +65,9 @@ def handle_dialogue():
         messages_for_openai = [{"role": "system", "content": system_prompt}]
         messages_for_openai.extend(conversation_history)
 
+        # Log the final messages being sent to OpenAI for debugging
+        current_app.logger.debug(f"Messages sent to OpenAI: {messages_for_openai}")
+
         try:
             current_app.logger.debug(f"Sending {len(messages_for_openai)} messages to OpenAI for {user_log_id}.")
 
@@ -61,7 +76,7 @@ def handle_dialogue():
                 messages=messages_for_openai,
                 temperature=current_app.config.get('OPENAI_TEMPERATURE', 0.7),
                 max_tokens=current_app.config.get('OPENAI_MAX_TOKENS', 100),
-                user=openai_user_param # Pass verified UID or guest identifier
+                user=openai_user_param # Pass verified UID
             )
             ai_response = completion.choices[0].message.content.strip()
             current_app.logger.info(f"Received OpenAI response for {user_log_id}")
