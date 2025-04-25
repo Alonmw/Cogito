@@ -17,17 +17,19 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
-  const colorScheme = useColorScheme();
+  const colorScheme = useColorScheme() ?? 'light'; // Default to light if undefined
   const isUser = message.sender === 'user';
+  const themeColors = Colors[colorScheme]; // Get theme colors
 
   // Determine background and text colors based on sender and theme
+  // Using tint for user, and a slightly different background/card for assistant
   const bubbleBackgroundColor = isUser
-    ? Colors[colorScheme ?? 'light'].tint // User message background (often primary color)
-    : Colors[colorScheme ?? 'light'].tabIconDefault; // Assistant message background (use default tab icon color - often gray)
+    ? themeColors.tint
+    : (colorScheme === 'light' ? '#E5E5EA' : '#2C2C2E'); // Example: Specific grays for assistant
 
   const textColor = isUser
-    ? Colors[colorScheme ?? 'light'].background // User message text (often light on tint)
-    : Colors[colorScheme ?? 'light'].text; // Assistant message text (default text color)
+    ? (colorScheme === 'light' ? '#FFFFFF' : '#FFFFFF') // White text on tint background usually works
+    : themeColors.text; // Default text color for assistant
 
   return (
     <View
@@ -40,15 +42,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
         style={[
           styles.bubble,
           { backgroundColor: bubbleBackgroundColor },
+          // Add slightly different border radius for visual distinction (optional)
+          isUser ? styles.userBubble : styles.assistantBubble,
         ]}
       >
         <Text style={[styles.messageText, { color: textColor }]}>
           {message.text}
         </Text>
-        {/* Optional: Add timestamp display */}
-        {/* <Text style={[styles.timestamp, { color: textColor, opacity: 0.7 }]}>
-          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text> */}
+        {/* Timestamps still hidden as per previous request */}
       </View>
     </View>
   );
@@ -56,29 +57,45 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
 
 const styles = StyleSheet.create({
   bubbleContainer: {
-    marginVertical: 5,
-    maxWidth: '80%', // Prevent bubbles from taking full width
+    // --- Increased vertical margin further ---
+    marginVertical: 15, // Increased from 10
+    // --- End Increase ---
+    maxWidth: '80%',
   },
   userBubbleContainer: {
-    alignSelf: 'flex-end', // Align user messages to the right
+    alignSelf: 'flex-end',
   },
   assistantBubbleContainer: {
-    alignSelf: 'flex-start', // Align assistant messages to the left
+    alignSelf: 'flex-start',
   },
   bubble: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 15, // Rounded corners
+    paddingVertical: 10, // Increased vertical padding
+    paddingHorizontal: 14, // Increased horizontal padding
     // Add shadow or elevation for depth (optional)
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 1,
+    shadowRadius: 1.5, // Slightly increased shadow radius
     elevation: 2,
+  },
+  userBubble: {
+      // Example: Different rounding for user
+      borderTopLeftRadius: 18,
+      borderTopRightRadius: 18,
+      borderBottomLeftRadius: 18,
+      borderBottomRightRadius: 5, // Slightly less round on one corner
+  },
+  assistantBubble: {
+      // Example: Different rounding for assistant
+      borderTopLeftRadius: 18,
+      borderTopRightRadius: 18,
+      borderBottomLeftRadius: 5, // Slightly less round on one corner
+      borderBottomRightRadius: 18,
   },
   messageText: {
     fontSize: 16,
   },
+  // Timestamp styles (kept in case needed later)
   timestamp: {
       fontSize: 10,
       alignSelf: 'flex-end',

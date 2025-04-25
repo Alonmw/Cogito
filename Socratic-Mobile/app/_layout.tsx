@@ -30,7 +30,9 @@ SplashScreen.preventAutoHideAsync();
 // --- Main Layout Component ---
 function MainLayout() {
   const colorScheme = useColorScheme();
-  const { user, initializing } = useAuth(); // Get user and initializing state
+  // --- Get isGuest from context ---
+  const { user, isGuest, initializing } = useAuth(); // Get user, isGuest, and initializing state
+  // --- End Change ---
   const router = useRouter(); // Hook for navigation
   const segments = useSegments(); // Hook to get current route segments
 
@@ -44,28 +46,27 @@ function MainLayout() {
   useEffect(() => {
     if (initializing) return; // Do nothing until auth is initialized
 
-    // Check if the user is currently in the main app group (tabs)
-    // Note: segments can be empty initially, so check length
     const inAppGroup = segments.length > 0 && segments[0] === '(tabs)';
-    // Check if the user is currently on the login screen
     const onLoginScreen = segments.length > 0 && segments[0] === 'login';
 
-    if (user && !inAppGroup) {
-      // User is signed in but not in the main app area, redirect to tabs/home
-      console.log('[ROUTER] User signed in, redirecting to (tabs)');
-      router.replace('/(tabs)'); // Use replace to prevent going back to login
-    } else if (!user && !onLoginScreen) {
-      // User is signed out and not on the login screen, redirect to login
-      console.log('[ROUTER] User signed out, redirecting to /login');
-      router.replace('/login'); // Use replace to prevent going back
-    }
-    // If user state matches the current location (e.g., signed in and in '(tabs)', or signed out and on '/login'), do nothing.
+    // --- Updated Routing Logic ---
+    const canAccessApp = user || isGuest; // User can access main app if logged in OR is guest
 
-  }, [user, initializing, segments, router]); // Rerun effect when these change
+    if (canAccessApp && !inAppGroup) {
+      // User/Guest should be in the main app area, redirect to tabs/home
+      console.log('[ROUTER] User/Guest authenticated/active, redirecting to (tabs)');
+      router.replace('/(tabs)');
+    } else if (!canAccessApp && !onLoginScreen) {
+      // User is not logged in AND not a guest, and not on the login screen -> redirect to login
+      console.log('[ROUTER] User signed out/not guest, redirecting to /login');
+      router.replace('/login');
+    }
+    // --- End Updated Routing Logic ---
+
+  }, [user, isGuest, initializing, segments, router]); // Add isGuest to dependencies
 
 
   // Show nothing while initializing (splash screen is visible)
-  // Or return a global loading indicator if preferred
   if (initializing) {
     return null;
   }

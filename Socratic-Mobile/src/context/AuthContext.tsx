@@ -12,31 +12,29 @@ import { Alert } from 'react-native';
 // Define the shape of the context value
 interface AuthContextType {
   user: FirebaseAuthTypes.User | null;
-  initializing: boolean; // Indicates if Firebase auth is still checking the initial state
-  isSigningIn: boolean; // Indicates if a sign-in process is active
-  signInError: string | null; // Stores sign-in errors
-  googleSignIn: () => Promise<void>; // Function to trigger Google Sign-In
-  signOut: () => Promise<void>; // Function to trigger Sign Out
+  isGuest: boolean; // <-- Add isGuest state
+  initializing: boolean;
+  isSigningIn: boolean;
+  signInError: string | null;
+  googleSignIn: () => Promise<void>;
+  signOut: () => Promise<void>;
+  continueAsGuest: () => void; // <-- Add function for guest mode
 }
 
-// Create the context with a default value (can be null or undefined initially)
-// Using '!' asserts that the context will be provided, handle with care or provide default functions.
 const AuthContext = createContext<AuthContextType>(null!);
 
-// Custom hook to use the AuthContext
 export const useAuth = () => {
   return useContext(AuthContext);
 };
 
-// Define props for the provider component
 interface AuthProviderProps {
-  children: ReactNode; // Allow children components to be passed
+  children: ReactNode;
 }
 
-// Create the provider component
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const [isGuest, setIsGuest] = useState(false); // <-- Initialize guest state
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
 
@@ -45,16 +43,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const subscriber = auth().onAuthStateChanged((user) => {
       console.log('[AUTH Context] Firebase Auth State Changed:', user ? user.uid : null);
       setUser(user);
+      if (user) {
+        setIsGuest(false); // If user logs in, they are not a guest
+      }
       if (initializing) setInitializing(false);
-      setIsSigningIn(false); // Ensure loading state is reset on auth change
+      setIsSigningIn(false);
     });
-    return subscriber; // unsubscribe on unmount
-  }, [initializing]); // Dependency array
+    return subscriber;
+  }, [initializing]);
 
-  // Google Sign-In Function (Moved from index.tsx)
+  // Google Sign-In Function
   const googleSignIn = async () => {
     setIsSigningIn(true);
     setSignInError(null);
+    setIsGuest(false); // Reset guest mode on sign-in attempt
     try {
       console.log('[AUTH Context] Checking Google Play Services...');
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
@@ -90,53 +92,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         setSignInError(`Sign in failed: ${error.message || error.code || 'Unknown error'}`);
       }
-      // Re-throw the error if needed elsewhere, or handle it fully here
     }
-    // Note: setIsSigningIn(false) is handled by the onAuthStateChanged listener
   };
 
-  // Sign Out Function (Moved from index.tsx - Fixed)
+  // Sign Out Function
   const signOut = async () => {
     try {
-      // --- Removed isSignedIn check, attempt Google Sign Out directly ---
       console.log('[AUTH Context] Attempting Google Sign Out...');
-      await GoogleSignin.signOut(); // Sign out from Google
-      console.log('[AUTH Context] Google Sign Out successful.');
-      // --- End Change ---
+      // Check if signed in with Google before signing out
+      // Note: isSignedIn might still be problematic, but let's keep the try/catch
+      try {
+        await GoogleSignin.signOut();
+        console.log('[AUTH Context] Google Sign Out successful.');
+      } catch (googleSignOutError: any) {
+         // Ignore errors like "SIGN_IN_REQUIRED" if user wasn't signed in with Google anyway
+         if (googleSignOutError.code !== statusCodes.SIGN_IN_REQUIRED) {
+            console.warn('[AUTH Context] Non-critical Google Sign Out error:', googleSignOutError);
+         } else {
+            console.log('[AUTH Context] Google Sign Out skipped (user was not signed in with Google).');
+         }
+      }
 
       console.log('[AUTH Context] Attempting Firebase Sign Out...');
-      await auth().signOut(); // Sign out from Firebase
+      await auth().signOut();
       console.log('[AUTH Context] Firebase Sign Out successful.');
+      setIsGuest(false); // Reset guest mode on sign out
     } catch (error: any) {
       console.error('[AUTH Context ERROR] Sign Out Error:', error);
-      // Check if the error is specifically because the user wasn't signed in with Google
-      // (Error codes might vary, check library docs if needed)
-       if (error.message?.includes('SIGN_IN_REQUIRED') || error.code === statusCodes.SIGN_IN_REQUIRED) {
-         console.log('[AUTH Context] Google Sign Out skipped (user was not signed in with Google).');
-         // Still attempt Firebase sign out if Google sign out failed because user wasn't signed in
-         try {
-           console.log('[AUTH Context] Attempting Firebase Sign Out after Google skip...');
-           await auth().signOut();
-           console.log('[AUTH Context] Firebase Sign Out successful.');
-         } catch (firebaseError) {
-            console.error('[AUTH Context ERROR] Firebase Sign Out Error after Google skip:', firebaseError);
-            Alert.alert('Sign Out Failed', 'An error occurred during Firebase sign out.');
-         }
-      } else {
-        // Handle other sign out errors
-        Alert.alert('Sign Out Failed', `An error occurred during sign out: ${error.message}`);
-      }
+      Alert.alert('Sign Out Failed', `An error occurred during sign out: ${error.message}`);
     }
   };
+
+  // --- Function to set guest mode ---
+  const continueAsGuest = () => {
+      console.log('[AUTH Context] Continuing as Guest.');
+      setUser(null); // Ensure no user object is set
+      setIsGuest(true);
+      setSignInError(null); // Clear any previous errors
+      setInitializing(false); // Ensure app proceeds if initializing was stuck
+  };
+  // --- End Function ---
 
   // Value provided to consuming components
   const value = {
     user,
+    isGuest, // <-- Provide guest state
     initializing,
     isSigningIn,
     signInError,
     googleSignIn,
     signOut,
+    continueAsGuest, // <-- Provide guest function
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
