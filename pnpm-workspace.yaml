@@ -1,0 +1,12 @@
+# pnpm-workspace.yaml
+# Defines the packages included in the pnpm workspace.
+
+packages:
+  # Include the mobile app
+  - 'Socratic-Mobile'
+  # Include packages within Socratic-Web (backend, frontend-react)
+  - 'Socratic-Web/backend'
+  - 'Socratic-Web/frontend-react'
+  # Include shared packages (we will create these next)
+  - 'packages/*'
+
