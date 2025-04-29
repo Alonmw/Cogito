@@ -1,9 +1,6 @@
-// app/(tabs)/index.tsx - Using Gifted Chat & Header
+// app/(tabs)/index.tsx - Using Gifted Chat & Shared API Client
 import React, { useState, useCallback, useEffect } from 'react';
-// --- Ensure Text is imported from react-native ---
 import { StyleSheet, View, Platform, Alert, Text } from 'react-native';
-// --- End Import ---
-// --- Import Gifted Chat components AND specific render props ---
 import {
   GiftedChat,
   IMessage,
@@ -17,15 +14,16 @@ import {
   Send,
   SendProps
 } from 'react-native-gifted-chat';
-// --- End Import ---
 import { useAuth } from '@/src/context/AuthContext';
-import { postDialogue } from '@/src/services/api';
-import { Colors } from '@/src/constants/Colors'; // Import Colors
-import { useColorScheme } from '@/src/hooks/useColorScheme'; // Import useColorScheme
-
-// --- Import Custom Header ---
-import ChatHeader from '@/src/components/ChatHeader'; // Adjust path if needed
-import { SafeAreaView } from 'react-native-safe-area-context'; // Use SafeAreaView from this library for better edge handling
+// --- Import the configured apiClient instance ---
+import apiClientInstance from '@/src/services/api'; // Adjust path if needed
+// --- End Import ---
+import { Colors } from '@/src/constants/Colors';
+import { useColorScheme } from '@/src/hooks/useColorScheme';
+import ChatHeader from '@/src/components/ChatHeader';
+import { SafeAreaView } from 'react-native-safe-area-context';
+// --- Import shared type if needed for clarity ---
+import { ApiHistoryMessage } from '@socratic/common-types'; // Adjust path if needed
 
 // Define user objects for Gifted Chat
 const USER: User = { _id: 1, name: 'User' };
@@ -34,7 +32,7 @@ const ASSISTANT: User = { _id: 2, name: 'Socratic Partner' };
 export default function ChatScreen() {
   const { user } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
-  const themeColors = Colors[colorScheme]; // Get theme colors object
+  const themeColors = Colors[colorScheme];
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -59,7 +57,7 @@ export default function ChatScreen() {
   };
 
   // Map Gifted Chat's IMessage back to our API format
-  const mapToApiHistory = (msgs: IMessage[]) => {
+  const mapToApiHistory = (msgs: IMessage[]): ApiHistoryMessage[] => { // Use imported type
       return msgs
           .map(msg => ({
               role: msg.user._id === USER._id ? 'user' : 'assistant',
@@ -70,10 +68,13 @@ export default function ChatScreen() {
 
   // Function called when the user presses the send button
   const onSend = useCallback(async (newMessages: IMessage[] = []) => {
-    if (!user || isLoading) {
-        if (!user) Alert.alert("Error", "You must be logged in to chat.");
+    // Use guest check from context if needed, or rely on backend optional auth
+    // if (!user && !isGuest) { // Example check if guest mode needs restriction
+    if (!user && !useAuth().isGuest) { // Check if not logged in and not guest
+        Alert.alert("Login Required", "Please log in or continue as guest to use the chat.");
         return;
     }
+     if (isLoading) return; // Prevent sending while loading
 
     let updatedMessages: IMessage[] = [];
     setMessages((previousMessages) => {
@@ -86,7 +87,9 @@ export default function ChatScreen() {
 
     try {
       console.log('[API Call] Sending history (chronological):', apiHistory);
-      const responseText = await postDialogue(apiHistory as any);
+      // --- Use the imported apiClientInstance ---
+      const responseText = await apiClientInstance.postDialogue(apiHistory);
+      // --- End Change ---
 
       if (responseText) {
         const aiResponse: IMessage = {
@@ -107,7 +110,8 @@ export default function ChatScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isLoading]);
+    // Removed messages from dependency array as functional update is used
+  }, [user, isLoading, useAuth().isGuest]); // Added isGuest dependency
 
   // Function to clear chat messages
   const handleClearChat = useCallback(() => {
@@ -144,11 +148,11 @@ export default function ChatScreen() {
       <InputToolbar
           {...props}
           containerStyle={{
-              // Apply theme colors, but keep default layout structure
               backgroundColor: themeColors.background,
               borderTopColor: themeColors.tabIconDefault,
               borderTopWidth: StyleSheet.hairlineWidth,
           }}
+          primaryStyle={{ alignItems: 'center' }}
       />
   );
   // --- End Custom Input Toolbar Renderer ---
@@ -157,10 +161,8 @@ export default function ChatScreen() {
   const renderCustomComposer = (props: ComposerProps) => (
       <Composer
           {...props}
-          // Only override color-related text input styles
           textInputStyle={{
               color: themeColors.text,
-              // Add other non-layout styles if needed, e.g., fontSize
           }}
           placeholderTextColor={themeColors.tabIconDefault}
       />
@@ -171,12 +173,9 @@ export default function ChatScreen() {
    const renderCustomSend = (props: SendProps<IMessage>) => (
        <Send
            {...props}
-           // Keep default container style for layout
-           // containerStyle={{}}
        >
-           {/* Only change the text color */}
-           <View>
-                <Text style={{ color: themeColors.tint, marginRight: 10, marginBottom: 10, fontWeight: '600' }}>Send</Text>
+           <View style={styles.sendButtonContainer}>
+                <Text style={{ color: themeColors.tint, fontWeight: '600' }}>Send</Text>
            </View>
        </Send>
    );
@@ -184,28 +183,23 @@ export default function ChatScreen() {
 
 
   return (
-    // Ensure SafeAreaView takes full screen height
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
         <ChatHeader onClearChat={handleClearChat} />
 
-        {/* Let GiftedChat handle its own layout within SafeAreaView */}
         <GiftedChat
             messages={messages}
             onSend={newMessages => onSend(newMessages)}
             user={USER}
             isTyping={isLoading}
-            // placeholder handled by renderComposer now
             alwaysShowSend
-            // --- UI Customization Props ---
             renderTime={() => null}
             renderDay={() => null}
             renderAvatar={() => null}
             showAvatarForEveryMessage={false}
             renderBubble={renderCustomBubble}
-            renderInputToolbar={renderCustomInputToolbar} // <-- Use custom toolbar
-            renderComposer={renderCustomComposer} // <-- Use custom composer
-            renderSend={renderCustomSend} // <-- Use custom send button
-            // --- End UI Customization ---
+            renderInputToolbar={renderCustomInputToolbar}
+            renderComposer={renderCustomComposer}
+            renderSend={renderCustomSend}
         />
     </SafeAreaView>
   );
@@ -214,6 +208,10 @@ export default function ChatScreen() {
 // Styles
 const styles = StyleSheet.create({
   container: {
-    flex: 1, // Ensure SafeAreaView takes full height
+    flex: 1,
   },
+  sendButtonContainer: { // Added style for Send button text container
+    marginRight: 10,
+    marginBottom: 10,
+  }
 });
