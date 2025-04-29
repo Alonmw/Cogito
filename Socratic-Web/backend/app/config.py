@@ -29,7 +29,3 @@ class Config:
     MAX_HISTORY_MSGS = 20
     PROMPT_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'prompt.txt')
 
-    # --- Removed JWT Configuration ---
-    # Removed: JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
-    # Removed: JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
-
