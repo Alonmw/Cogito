@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Socratic-Mobile",
+    "slug": "Socratic-Mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/images/owl-logo-2.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "io.alonmw.socratic-questioner",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/images/owl-logo-2.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "io.alonmw.socratic_questioner",
+      "googleServicesFile": "./google-services.json"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./src/assets/images/owl-logo-2.png"
+    },
+    "plugins": [
+      "expo-router",
+      "@react-native-firebase/app",
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./src/assets/images/owl-logo-2.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "8f7b6f0c-1d4c-425b-a1d6-ab1c82071831"
+      }
+    }
+  }
+}
