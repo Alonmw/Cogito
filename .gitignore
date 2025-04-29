@@ -1,4 +1,11 @@
 # Environment variables
+
+# Node modules - Ignore in root and all packages
+node_modules/
+packages/*/node_modules/
+Socratic-Mobile/node_modules/
+Socratic-Web/*/node_modules/
+
 # Ignore .env files in root and backend to protect secrets
 .env
 Socratic-Web/backend/.env
