@@ -7,37 +7,7 @@ import {
   ApiErrorResponse
 } from '@socratic/common-types';
 
-// --- Helper to get environment variables safely in different environments ---
-function getEnvVariable(viteKey: string, expoKey: string): string | undefined {
-    // Check Vite/Web environment first using import.meta.env
-    // Use explicit check for 'import.meta' object existence
-    // @ts-ignore - Acknowledge TS might not know import.meta globally
-    if (typeof import.meta !== 'undefined' && import.meta.env) {
-        // @ts-ignore
-        console.log(`[API Client] Checking Vite env var: ${viteKey}`);
-        // @ts-ignore
-        return import.meta.env[viteKey];
-    }
-    // Check Node/Expo environment ONLY if Vite's env isn't available
-    // Use careful check for process and process.env existence
-    else if (typeof process !== 'undefined' && typeof process.env !== 'undefined') {
-        console.log(`[API Client] Checking Expo/Node env var: ${expoKey}`);
-        return process.env[expoKey];
-    }
-    // Fallback if neither environment object is found
-    console.log(`[API Client] No env var context found for ${viteKey} or ${expoKey}`);
-    return undefined;
-}
-// --- End Helper ---
-
-
-// --- Configuration ---
-const ENV_URLS = {
-    DEVELOPMENT: getEnvVariable('VITE_STAGING_BACKEND_URL', 'EXPO_PUBLIC_STAGING_BACKEND_URL') || 'https://socratic-questioner-dev.onrender.com', // Default dev
-    PRODUCTION: getEnvVariable('VITE_PRODUCTION_BACKEND_URL', 'EXPO_PUBLIC_PRODUCTION_BACKEND_URL') || 'https://socratic-questioner.onrender.com', // Default prod
-};
-// --- End Configuration ---
-
+// --- Removed environment variable checking logic ---
 
 // Function type for getting the auth token (platform-specific)
 export type GetIdTokenFunction = () => Promise<string | null>;
@@ -46,15 +16,19 @@ export type GetIdTokenFunction = () => Promise<string | null>;
 export class ApiClient {
     private axiosInstance: AxiosInstance;
     private getIdToken: GetIdTokenFunction;
-    private baseUrl: string;
+    private baseUrl: string; // Store the base URL
 
-    constructor(getIdTokenFunc: GetIdTokenFunction, environment: 'DEVELOPMENT' | 'PRODUCTION' = 'DEVELOPMENT') {
+    // --- Constructor now accepts baseUrl directly ---
+    constructor(getIdTokenFunc: GetIdTokenFunction, baseUrl: string) {
+        if (!baseUrl) {
+            throw new Error("ApiClient: baseUrl must be provided.");
+        }
         this.getIdToken = getIdTokenFunc;
-        this.baseUrl = ENV_URLS[environment];
-        console.log(`[API Client] Initializing for environment: ${environment} with base URL: ${this.baseUrl}`);
+        this.baseUrl = baseUrl;
+        console.log(`[API Client] Initializing with base URL: ${this.baseUrl}`);
 
         this.axiosInstance = axios.create({
-            baseURL: this.baseUrl,
+            baseURL: this.baseUrl, // Use the provided baseUrl
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -63,11 +37,12 @@ export class ApiClient {
         // Add request interceptor to attach auth token
         this.axiosInstance.interceptors.request.use(
             async (config: InternalAxiosRequestConfig) => {
+                // Add token only to relative paths (dialogue endpoint)
                 if (config.url === '/api/dialogue' && config.method === 'post') {
                     try {
                         const idToken = await this.getIdToken();
                         if (idToken) {
-                            console.log('[API Client Interceptor] Attaching Authorization header.');
+                            // console.log('[API Client Interceptor] Attaching Authorization header.');
                             config.headers.Authorization = `Bearer ${idToken}`;
                         } else {
                             console.warn('[API Client Interceptor] No ID Token available.');
@@ -81,11 +56,13 @@ export class ApiClient {
             (error) => Promise.reject(error)
         );
     }
+    // --- End Constructor Change ---
 
-    // --- API Methods ---
+    // --- API Methods (Remain the same) ---
 
     public async checkBackendConnection(): Promise<string | null> {
          try {
+            // Use relative path now, baseURL is set in instance
             const response = await this.axiosInstance.get<string>('/');
             console.log('[API Client] Backend connection successful:', response.data);
             return response.data;
@@ -98,8 +75,9 @@ export class ApiClient {
 
     public async postDialogue(history: ApiHistoryMessage[]): Promise<string | null> {
         const payload: DialoguePayload = { history };
-        console.log('[API Client] Sending payload to /api/dialogue:', JSON.stringify(payload, null, 2));
+        // console.log('[API Client] Sending payload to /api/dialogue:', JSON.stringify(payload, null, 2));
         try {
+            // Use relative path now
             const response = await this.axiosInstance.post<DialogueResponse>('/api/dialogue', payload);
             console.log('[API Client] Received dialogue response:', response.data);
             return response.data?.response ?? null;
@@ -110,7 +88,7 @@ export class ApiClient {
         }
     }
 
-    // --- Private Error Handler ---
+    // --- Private Error Handler (Remains the same) ---
     private handleApiError(error: any, functionName: string): void {
         if (axios.isAxiosError(error)) {
             const status = error.response?.status;
