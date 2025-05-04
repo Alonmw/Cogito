@@ -8,7 +8,6 @@ import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signOut,
-    AuthError, // Keep AuthError for potential specific checks if needed later, or remove if truly unused
     GoogleAuthProvider,
     signInWithPopup,
     updateProfile,
