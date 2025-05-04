@@ -1,30 +1,43 @@
-// src/context/AuthContext.tsx
-// v7: Removed incorrect setIsLoggedIn calls
-
+// src/context/AuthContext.tsx (Web Version)
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-// Import Firebase auth instance and functions
-import { auth } from '../firebaseConfig';
+// Import Firebase auth instance and JS SDK functions
+import { auth } from '../firebaseConfig'; // Assuming firebaseConfig initializes Firebase JS SDK
 import {
     User as FirebaseUser,
     onAuthStateChanged,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signOut,
-    AuthError,
-    UserCredential
+    AuthError, // Keep AuthError for potential specific checks if needed later, or remove if truly unused
+    GoogleAuthProvider,
+    signInWithPopup,
+    updateProfile,
+    sendEmailVerification,
+    sendPasswordResetEmail,
+    // FirebaseError // <-- Removed unused/incorrect import
 } from "firebase/auth";
 
-// Define the shape of the context data
+// Define the shape of the context data (matching mobile where possible)
 interface AuthContextType {
   currentUser: FirebaseUser | null;
   isGuest: boolean;
   isLoading: boolean;
-  error: string | null;
-  isLoggedIn: boolean; // Keep derived flag for convenience
-  login: (email: string, password: string) => Promise<boolean>;
+  isSigningIn: boolean; // Google Sign-In loading
+  isRegistering: boolean;
+  isLoggingIn: boolean; // Email/Password login loading
+  isSendingPasswordReset: boolean;
+  signInError: string | null; // Google Sign-In error
+  registrationError: string | null;
+  emailSignInError: string | null;
+  passwordResetError: string | null;
+  passwordResetSent: boolean;
+  googleSignIn: () => Promise<void>;
   logout: () => Promise<void>;
-  register: (email: string, password: string) => Promise<boolean>;
+  register: (name: string, email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   continueAsGuest: () => void;
+  clearAuthErrors: () => void;
 }
 
 // Create the context
@@ -35,113 +48,234 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// --- Updated Type Guard ---
+// Helper function to check if an error looks like a FirebaseError (has code and message)
+// We don't need to import FirebaseError directly
+function isFirebaseError(error: unknown): error is { code: string; message: string } {
+    return typeof error === 'object' && error !== null && 'code' in error && typeof (error as any).code === 'string' && 'message' in error && typeof (error as any).message === 'string';
+}
+// --- End Updated Type Guard ---
+
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
   const [isGuest, setIsGuest] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isSendingPasswordReset, setIsSendingPasswordReset] = useState(false);
+  const [signInError, setSignInError] = useState<string | null>(null);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
+  const [emailSignInError, setEmailSignInError] = useState<string | null>(null);
+  const [passwordResetError, setPasswordResetError] = useState<string | null>(null);
+  const [passwordResetSent, setPasswordResetSent] = useState(false);
 
   // Effect to listen for Firebase auth state changes
   useEffect(() => {
-    setIsLoading(true);
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log("Auth state changed listener fired. User:", user ? user.uid : null);
+      console.log("[Web Auth] Auth state changed. User:", user ? user.uid : null);
       setCurrentUser(user);
       if (user) { setIsGuest(false); }
-      if (isLoading) { setIsLoading(false); } // Only influence initial load
-    }, (err) => {
-        console.error("Error in onAuthStateChanged listener:", err);
+      setIsSigningIn(false);
+      setIsRegistering(false);
+      setIsLoggingIn(false);
+      setIsSendingPasswordReset(false);
+      clearAuthErrors();
+      setPasswordResetSent(false);
+      if (isLoading) { setIsLoading(false); }
+    }, (err: unknown) => { // Catch listener error as unknown
+        console.error("[Web Auth] Error in onAuthStateChanged:", err);
         setCurrentUser(null);
         setIsGuest(false);
         setIsLoading(false);
-        setError("Failed to initialize authentication state.");
+        // Optionally set a generic error state here if needed
     });
     return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
-    setError(null);
+  const clearAuthErrors = () => {
+      setSignInError(null);
+      setRegistrationError(null);
+      setEmailSignInError(null);
+      setPasswordResetError(null);
+  };
+
+  const login = async (email: string, password: string): Promise<void> => {
+    setIsLoggingIn(true);
+    clearAuthErrors();
+    setPasswordResetSent(false);
+    setIsGuest(false);
     try {
-      const userCredential: UserCredential = await signInWithEmailAndPassword(auth, email, password);
-      console.log("Firebase signIn successful, userCredential:", userCredential.user?.uid);
-      // Explicitly set state immediately for faster UI update
-      setCurrentUser(userCredential.user);
-      // setIsLoggedIn(true); // <-- REMOVED THIS LINE
-      setIsGuest(false);
-      setIsLoading(false);
-      return true;
-    } catch (err: any) {
-      console.error("Firebase Login failed:", err);
-      setError((err as AuthError).message || 'Login failed.');
-      setIsLoading(false);
-      return false;
+      console.log("[Web Auth] Attempting Email/Password Sign In...");
+      await signInWithEmailAndPassword(auth, email, password);
+      console.log("[Web Auth] Email/Password Sign In successful.");
+    } catch (err: unknown) { // Catch as unknown
+      console.error("[Web Auth] Email Login failed:", err);
+      // Use the updated type guard
+      if (isFirebaseError(err)) {
+          if (err.code === 'auth/invalid-email' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+              setEmailSignInError('Invalid email or password.');
+          } else if (err.code === 'auth/user-disabled') {
+              setEmailSignInError('This user account has been disabled.');
+          } else {
+              setEmailSignInError(err.message || 'Login failed.');
+          }
+      } else {
+           setEmailSignInError('An unexpected error occurred during login.');
+      }
+      setIsLoggingIn(false);
     }
   };
 
-  const register = async (email: string, password: string): Promise<boolean> => {
-      setIsLoading(true);
-      setError(null);
+  const register = async (name: string, email: string, password: string): Promise<void> => {
+      setIsRegistering(true);
+      clearAuthErrors();
+      setPasswordResetSent(false);
+      setIsGuest(false);
       try {
-          const userCredential: UserCredential = await createUserWithEmailAndPassword(auth, email, password);
-          console.log("Firebase Registration successful, userCredential:", userCredential.user?.uid);
-          // Explicitly set state immediately
-          setCurrentUser(userCredential.user);
-          // setIsLoggedIn(true); // <-- REMOVED THIS LINE
-          setIsGuest(false);
-          setIsLoading(false);
-          return true;
-      } catch (err: any) {
-          console.error("Firebase Register failed:", err);
-          setError((err as AuthError).message || 'Registration failed.');
-          setIsLoading(false);
-          return false;
+          console.log("[Web Auth] Attempting Email/Password Registration...");
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          console.log("[Web Auth] User account created & signed in!");
+          const newUser = userCredential.user;
+
+          // Send verification email
+          if (newUser) {
+              try {
+                  await sendEmailVerification(newUser);
+                  alert("Registration Successful! Please check your email to verify your address.");
+              } catch (verificationError: unknown) { // Catch as unknown
+                  console.error("[Web Auth] Failed to send verification email:", verificationError);
+                  alert("Verification Email Failed. Could not send verification email, but your account was created.");
+              }
+          }
+
+          // Update profile display name
+          if (newUser && name.trim()) {
+              try {
+                  await updateProfile(newUser, { displayName: name.trim() });
+                  setCurrentUser(auth.currentUser);
+              } catch (profileError: unknown) { // Catch as unknown
+                  console.warn("[Web Auth] Could not update profile display name:", profileError);
+              }
+          }
+
+      } catch (err: unknown) { // Catch as unknown
+          console.error("[Web Auth] Email Register failed:", err);
+          // Use the updated type guard
+          if (isFirebaseError(err)) {
+              if (err.code === 'auth/email-already-in-use') { setRegistrationError('Email already in use.'); }
+              else if (err.code === 'auth/invalid-email') { setRegistrationError('Invalid email address.'); }
+              else if (err.code === 'auth/weak-password') { setRegistrationError('Password too weak (min. 6 characters).'); }
+              else { setRegistrationError(err.message || 'Registration failed.'); }
+          } else {
+              setRegistrationError('An unexpected error occurred during registration.');
+          }
+          setIsRegistering(false);
       }
   };
 
+  const googleSignIn = async (): Promise<void> => {
+      setIsSigningIn(true);
+      clearAuthErrors();
+      setPasswordResetSent(false);
+      setIsGuest(false);
+      try {
+          console.log("[Web Auth] Attempting Google Sign In...");
+          const provider = new GoogleAuthProvider();
+          await signInWithPopup(auth, provider);
+          console.log("[Web Auth] Google Sign In successful (popup closed).");
+      } catch (err: unknown) { // Catch as unknown
+          console.error("[Web Auth] Google Sign In failed:", err);
+          // Use the updated type guard
+          if (isFirebaseError(err)) {
+              if (err.code === 'auth/popup-closed-by-user') { setSignInError('Sign in cancelled (popup closed).'); }
+              else if (err.code === 'auth/cancelled-popup-request') { setSignInError('Sign in cancelled (multiple popups).'); }
+              else { setSignInError(err.message || 'Google Sign in failed.'); }
+          } else {
+               setSignInError('An unexpected error occurred during Google Sign in.');
+          }
+          setIsSigningIn(false);
+      }
+  };
+
+  const sendPasswordReset = async (email: string): Promise<void> => {
+      setIsSendingPasswordReset(true);
+      setPasswordResetError(null);
+      setPasswordResetSent(false);
+      try {
+          console.log(`[Web Auth] Sending password reset email to ${email}...`);
+          await sendPasswordResetEmail(auth, email);
+          console.log('[Web Auth] Password reset email sent.');
+          setPasswordResetSent(true);
+      } catch (err: unknown) { // Catch as unknown
+          console.error("[Web Auth] Password Reset failed:", err);
+          // Use the updated type guard
+          if (isFirebaseError(err)) {
+              if (err.code === 'auth/invalid-email') { setPasswordResetError('Invalid email address.'); }
+              else if (err.code === 'auth/user-not-found') { setPasswordResetError('No user found with this email.'); }
+              else { setPasswordResetError(err.message || 'Failed to send reset email.'); }
+          } else {
+              setPasswordResetError('An unexpected error occurred sending reset email.');
+          }
+      } finally {
+          setIsSendingPasswordReset(false);
+      }
+  };
 
   const logout = async (): Promise<void> => {
-    setError(null);
-    setIsLoading(true);
+    clearAuthErrors();
+    setPasswordResetSent(false);
     try {
+        console.log("[Web Auth] Attempting Firebase Logout...");
         await signOut(auth);
-        // onAuthStateChanged will set currentUser to null
+        console.log("[Web Auth] Firebase Logout successful.");
         setIsGuest(false);
-        console.log("Firebase Logout successful.");
-    } catch (err: any) {
-         console.error("Firebase Logout failed:", err);
-         setError((err as AuthError).message || 'Logout failed.');
-    } finally {
-        setIsLoading(false);
+    } catch (err: unknown) { // Catch as unknown
+         console.error("[Web Auth] Firebase Logout failed:", err);
+         // Optionally set a generic error state if needed
     }
   };
 
   // Function to handle guest mode entry
   const continueAsGuest = () => {
-      console.log("Continuing as guest via context.");
-      if (currentUser) { logout(); }
-      setCurrentUser(null);
-      setIsGuest(true);
-      setError(null);
+      console.log("[Web Auth] Continuing as guest.");
+      if (currentUser) {
+          logout();
+      } else {
+          setCurrentUser(null);
+          setIsGuest(true);
+          clearAuthErrors();
+          setPasswordResetSent(false);
+          setIsLoading(false);
+      }
   };
 
 
   // Value provided to consuming components
-  const isLoggedIn = !!currentUser; // Derived flag
   const value = {
     currentUser,
     isGuest,
     isLoading,
-    error,
-    isLoggedIn, // Provide derived boolean flag
-    login,
+    isSigningIn,
+    isRegistering,
+    isLoggingIn,
+    isSendingPasswordReset,
+    signInError,
+    registrationError,
+    emailSignInError,
+    passwordResetError,
+    passwordResetSent,
+    googleSignIn,
     logout,
     register,
+    login,
+    sendPasswordReset,
     continueAsGuest,
+    clearAuthErrors,
   };
 
-  // Render children immediately, App.tsx handles global loading state now
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 

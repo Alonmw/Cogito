@@ -1,142 +1,272 @@
-// src/screens/AuthScreen.tsx
-// v5: Uses useAuth hook fully, removed props
+// src/screens/AuthScreen.tsx (Web Version)
+import React, { useState, useEffect } from 'react';
+// Import the web version of useAuth
+import { useAuth } from '../context/AuthContext'; // Adjust path if needed
 
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext'; // Import useAuth hook
-
-// No props needed from App.tsx anymore
-// interface AuthScreenProps {
-//   onGuestContinue: () => void;
-// }
+// Reusing the logo URI
+const googleLogoUri = 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png';
 
 const AuthScreen: React.FC = () => {
-  // Get functions and state from context
-  const { login, register, continueAsGuest, isLoading, error: authError } = useAuth();
+  // Get state and functions from the WEB AuthContext
+  const {
+    googleSignIn,
+    isSigningIn,
+    signInError, // Google specific error
+    continueAsGuest,
+    register, // Renamed from registerWithEmail in web context
+    isRegistering,
+    registrationError,
+    login, // Renamed from signInWithEmail in web context
+    isLoggingIn,
+    emailSignInError,
+    sendPasswordReset,
+    isSendingPasswordReset,
+    passwordResetError,
+    passwordResetSent,
+    clearAuthErrors,
+  } = useAuth();
 
-  // State for input fields remains local
-  const [username, setUsername] = useState(''); // Assuming email is used as username for Firebase
+  // State for Login/Register toggle
+  const [isLoginView, setIsLoginView] = useState(true);
+  // State for form inputs
+  const [name, setName] = useState(''); // Only for registration
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  // Local error state for form validation (optional)
-  const [formError, setFormError] = useState<string | null>(null);
 
-  const handleLoginSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setFormError(null);
-    if (!username || !password) {
-        setFormError("Email and password are required."); // Changed to Email
-        return;
+  // Clear errors when switching views
+  useEffect(() => {
+    clearAuthErrors();
+  }, [isLoginView, clearAuthErrors]);
+
+  // Determine if any auth action is in progress
+  const authInProgress = isSigningIn || isRegistering || isLoggingIn || isSendingPasswordReset;
+
+  // --- Form Submit Handlers ---
+  const handleRegisterSubmit = (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent default form submission
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      alert("Missing Fields: Please fill in all registration fields."); // Use web alert
+      return;
     }
-    console.log('Attempting login via context with:', { username, password });
-    const success = await login(username, password); // username is email here
-    if (success) { console.log("Login successful (handled by context)"); }
-    else { console.log("Login failed (handled by context)"); }
+    register(name, email, password);
   };
 
-  const handleRegisterSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setFormError(null);
-    if (!username || !password) {
-        setFormError("Email and password are required."); // Changed to Email
-        return;
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) {
+      alert("Missing Fields: Please enter email and password.");
+      return;
     }
-    if (password.length < 8) { // Firebase default is 6, but keep 8 for consistency? Or lower?
-        setFormError("Password must be at least 8 characters long.");
-        return;
-    }
-    console.log('Attempting registration via context with:', { username, password });
-    const success = await register(username, password); // username is email here
-    if (success) {
-      alert('Registration successful! You are now logged in.'); // Firebase logs in automatically
-      // No need to call login, context state updates via onAuthStateChanged
-      setUsername(''); setPassword(''); // Clear form
-    } else {
-       console.log("Registration failed (handled by context)");
-    }
+    login(email, password);
   };
 
-  // Handler for the guest button uses context function directly
-  const handleGuestClick = () => {
-    setFormError(null);
-    continueAsGuest(); // Call context function
+  const handleForgotPasswordClick = () => {
+    if (!email.trim()) {
+      alert("Missing Email: Please enter your email address first.");
+      return;
+    }
+    sendPasswordReset(email);
   };
+
+  // Function to toggle between Login and Register views
+  const toggleView = () => {
+    setIsLoginView(!isLoginView);
+    // Clear form fields when toggling
+    setName('');
+    setEmail('');
+    setPassword('');
+    clearAuthErrors();
+  };
+
+  // Common input field classes
+  const inputClasses = "w-full px-4 py-2 mb-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400";
+  // Common action button classes
+  const actionButtonClasses = "w-full px-4 py-3 mt-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-gray-800";
+  // Google button classes
+  const googleButtonClasses = "w-full px-4 py-3 mt-4 flex items-center justify-center border rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 dark:bg-gray-200 dark:border-gray-400 dark:hover:bg-gray-300";
+  // Text color for Google button
+  const googleButtonTextColor = "text-blue-600 dark:text-blue-700";
+  // Base text color
+  const textColor = "text-gray-800 dark:text-gray-200";
+  // Link color
+  const linkColor = "text-blue-600 hover:underline dark:text-blue-400";
 
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 p-4">
-      <h1 className="text-4xl font-serif font-bold text-gray-800 dark:text-gray-100 mb-10">
-        Socratic Partner
-      </h1>
+    <div className={`flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 ${textColor}`}>
+      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md dark:bg-gray-800">
+        <h1 className="text-3xl font-bold text-center">Welcome to Socratic Partner</h1>
+        <p className="text-center text-gray-600 dark:text-gray-400">
+          {isLoginView ? 'Sign in to your account' : 'Create a new account'}
+        </p>
 
-      <div className="w-full max-w-sm bg-white dark:bg-gray-700 shadow-xl rounded-lg p-8">
-        {/* Display Combined Errors */}
-        {(formError || authError) && (
-            <p className="text-red-500 text-xs italic mb-4 text-center">
-                {formError || authError}
-            </p>
-        )}
+        {/* --- Conditionally Render Login or Register Form --- */}
+        {isLoginView ? (
+          // --- Login Form ---
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="login-email" className="sr-only">Email</label>
+              <input
+                id="login-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+                required
+                disabled={authInProgress}
+                className={inputClasses}
+              />
+            </div>
+            <div>
+              <label htmlFor="login-password" className="sr-only">Password</label>
+              <input
+                id="login-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                required
+                disabled={authInProgress}
+                className={inputClasses}
+              />
+            </div>
+            {/* Forgot Password Link & Feedback */}
+            <div className="text-right text-sm">
+              <button
+                type="button" // Prevent form submission
+                onClick={handleForgotPasswordClick}
+                disabled={authInProgress || isSendingPasswordReset}
+                className={`${linkColor} disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                Forgot Password?
+              </button>
+            </div>
+            {isSendingPasswordReset && <p className="text-sm text-center text-gray-600 dark:text-gray-400">Sending reset email...</p>}
+            {passwordResetSent && <p className="text-sm text-center text-green-600 dark:text-green-400">Password reset email sent! Check your inbox.</p>}
+            {passwordResetError && <p className="text-sm text-center text-red-600">Error: {passwordResetError}</p>}
+            {/* End Feedback */}
 
-        {/* Combined Login/Register Form */}
-        {/* Using email for Firebase Auth */}
-        <form onSubmit={handleLoginSubmit} className="mb-6">
-          <h2 className="text-2xl font-sans font-semibold text-center text-gray-700 dark:text-gray-200 mb-6">Login / Register</h2>
-          <div className="mb-4">
-            <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="auth-email">
-              Email
-            </label>
-            <input
-              id="auth-email"
-              type="email" // Use email type
-              value={username} // Still using 'username' state var, but it's for email
-              onChange={(e) => { setUsername(e.target.value); setFormError(null); }}
-              placeholder="Enter your email"
-              required
-              disabled={isLoading}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-600 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="auth-password">
-              Password
-            </label>
-            <input
-              id="auth-password"
-              type="password"
-              value={password}
-              onChange={(e) => { setPassword(e.target.value); setFormError(null); }}
-              placeholder="Enter your password (min 6 chars for Firebase)" // Firebase default min is 6
-              required
-              disabled={isLoading}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-600 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div className="flex items-center justify-between space-x-2">
-            {/* Login Button */}
-            <button type="submit" disabled={isLoading} className="flex-1 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out disabled:opacity-50">
-              {isLoading ? 'Working...' : 'Sign In'}
-            </button>
-            {/* Register Button */}
-             <button
-              type="button"
-              onClick={(e) => handleRegisterSubmit(e as any)} // Call register handler
-              disabled={isLoading}
-              className="flex-1 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out disabled:opacity-50"
+            <button
+              type="submit"
+              disabled={authInProgress}
+              className={actionButtonClasses}
             >
-              {isLoading ? 'Working...' : 'Register'}
+              {isLoggingIn ? 'Logging In...' : 'Log In'}
             </button>
-          </div>
-        </form>
+            {emailSignInError && <p className="mt-2 text-sm text-center text-red-600">Error: {emailSignInError}</p>}
+          </form>
+          // --- End Login Form ---
+        ) : (
+          // --- Registration Form ---
+          <form onSubmit={handleRegisterSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="register-name" className="sr-only">Name</label>
+              <input
+                id="register-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Name"
+                required
+                disabled={authInProgress}
+                className={inputClasses}
+              />
+            </div>
+            <div>
+              <label htmlFor="register-email" className="sr-only">Email</label>
+              <input
+                id="register-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+                required
+                disabled={authInProgress}
+                className={inputClasses}
+              />
+            </div>
+            <div>
+              <label htmlFor="register-password" className="sr-only">Password</label>
+              <input
+                id="register-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password (min. 6 characters)"
+                required
+                minLength={6}
+                disabled={authInProgress}
+                className={inputClasses}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={authInProgress}
+              className={actionButtonClasses}
+            >
+              {isRegistering ? 'Signing Up...' : 'Sign Up'}
+            </button>
+            {registrationError && <p className="mt-2 text-sm text-center text-red-600">Error: {registrationError}</p>}
+          </form>
+          // --- End Registration Form ---
+        )}
+        {/* --- End Conditional Render --- */}
 
-        {/* Continue as Guest */}
-        <div className="text-center mt-6 border-t pt-6 dark:border-gray-600">
-          <button onClick={handleGuestClick} disabled={isLoading} className="w-full bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out disabled:opacity-50">
-            Continue as Guest
+
+        {/* --- OR Separator and Google/Guest options (only show in Login view) --- */}
+        {isLoginView && (
+          <>
+            <div className="my-6 flex items-center justify-center">
+              <span className="flex-grow block border-t border-gray-300 dark:border-gray-600"></span>
+              <span className="mx-4 text-sm font-medium text-gray-500 dark:text-gray-400">OR</span>
+              <span className="flex-grow block border-t border-gray-300 dark:border-gray-600"></span>
+            </div>
+
+            {/* Google Sign-In Button */}
+            <button
+              type="button"
+              onClick={googleSignIn}
+              disabled={authInProgress}
+              className={`${googleButtonClasses} focus:ring-blue-500`}
+            >
+              <img src={googleLogoUri} alt="Google logo" className="w-5 h-5 mr-3" />
+              <span className={`font-medium ${googleButtonTextColor}`}>
+                Sign in with Google
+              </span>
+            </button>
+            {isSigningIn && <p className="mt-2 text-sm text-center text-gray-600 dark:text-gray-400">Signing in...</p>}
+            {signInError && <p className="mt-2 text-sm text-center text-red-600">Error: {signInError}</p>}
+
+            {/* Continue as Guest Button/Link */}
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={continueAsGuest}
+                disabled={authInProgress}
+                className={`text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50`}
+              >
+                Continue as Guest
+              </button>
+            </div>
+          </>
+        )}
+        {/* --- End OR Separator etc. --- */}
+
+
+        {/* --- Toggle Login/Register View --- */}
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={toggleView}
+            disabled={authInProgress}
+            className={`text-sm font-medium ${linkColor} disabled:opacity-50`}
+          >
+            {isLoginView ? "Don't have an account? Sign Up" : "Already have an account? Log In"}
           </button>
         </div>
-      </div>
+        {/* --- End Toggle --- */}
 
-      <p className="text-center text-gray-500 dark:text-gray-400 text-xs mt-8">
-        &copy;2025 Socratic Partner. All rights reserved.
-      </p>
+      </div>
     </div>
   );
 };
