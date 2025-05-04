@@ -1,12 +1,17 @@
 // src/components/Chatbox.tsx
-// v2: Renders messages and handles auto-scrolling
+// v3: Refactored to use shared ApiHistoryMessage type
 
 import React, { useEffect, useRef } from 'react';
-import Message, { MessageData } from './Message'; // Import Message component and type
+import Message from './Message'; // Keep importing Message component
+// --- Import shared type ---
+import { ApiHistoryMessage } from '@socratic/common-types'; // Adjust path if needed
+
+// --- Removed local MessageData import ---
 
 interface ChatboxProps {
-  messages: MessageData[]; // Expect an array of message objects
-  isLoading: boolean; // Add isLoading prop
+  // --- Use shared type for messages prop ---
+  messages: ApiHistoryMessage[];
+  isLoading: boolean;
 }
 
 const Chatbox: React.FC<ChatboxProps> = ({ messages, isLoading }) => {
@@ -16,29 +21,28 @@ const Chatbox: React.FC<ChatboxProps> = ({ messages, isLoading }) => {
   // Effect to scroll to bottom whenever messages array changes
   useEffect(() => {
     if (chatboxScrollRef.current) {
-      // Scroll down smoothly after messages render
-      // Use setTimeout to ensure scroll happens after DOM update
       setTimeout(() => {
         if (chatboxScrollRef.current) {
              chatboxScrollRef.current.scrollTo({
                 top: chatboxScrollRef.current.scrollHeight,
-                behavior: 'smooth' // Add smooth scrolling
+                behavior: 'smooth'
              });
         }
-      }, 50); // Small delay helps ensure rendering is complete
+      }, 50);
     }
-  }, [messages]); // Dependency array: run effect when messages change
+  }, [messages]);
 
   return (
     // This container grows and handles scrolling
     <div
-      ref={chatboxScrollRef} // Attach ref here
+      ref={chatboxScrollRef}
       className="flex-grow p-4 overflow-y-auto bg-gray-50 dark:bg-gray-900"
     >
-      {/* Map over messages array to render Message components */}
+      {/* Map over messages array (now ApiHistoryMessage[]) */}
       {messages.map((msg, index) => (
-        // Use index as key for now, consider unique IDs later if available
-        <Message key={index} message={msg} />
+        // Pass the ApiHistoryMessage object to the Message component
+        // Use a more stable key if possible, e.g., message ID if backend provides one
+        <Message key={msg.role + index} message={msg} /> // Key updated slightly
       ))}
 
       {/* Loading Indicator */}

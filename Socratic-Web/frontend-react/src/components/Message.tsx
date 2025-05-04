@@ -1,17 +1,19 @@
 // src/components/Message.tsx
-import React from 'react';
+// v2: Refactored to use shared ApiHistoryMessage type
 
-// Define the structure of a message object
-export interface MessageData {
-  role: 'user' | 'assistant'; // Roles recognized by OpenAI & for styling
-  content: string;
-}
+import React from 'react';
+// --- Import shared type ---
+import { ApiHistoryMessage } from '@socratic/common-types'; // Adjust path if needed
+
+// --- Removed local MessageData interface ---
 
 interface MessageProps {
-  message: MessageData;
+  // --- Use shared type for message prop ---
+  message: ApiHistoryMessage;
 }
 
 const Message: React.FC<MessageProps> = ({ message }) => {
+  // Destructure using the properties from ApiHistoryMessage
   const { role, content } = message;
   const isUser = role === 'user';
 
