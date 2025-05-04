@@ -8,17 +8,24 @@ import {
 } from '@socratic/common-types';
 
 // --- Helper to get environment variables safely in different environments ---
-function getEnvVariable(viteKey: string, expoKey: string, nodeKey?: string): string | undefined {
-    // Check Vite/Web environment first
-    // @ts-ignore - Vite injects import.meta.env, TS might not know about it globally
+function getEnvVariable(viteKey: string, expoKey: string): string | undefined {
+    // Check Vite/Web environment first using import.meta.env
+    // Use explicit check for 'import.meta' object existence
+    // @ts-ignore - Acknowledge TS might not know import.meta globally
     if (typeof import.meta !== 'undefined' && import.meta.env) {
+        // @ts-ignore
+        console.log(`[API Client] Checking Vite env var: ${viteKey}`);
         // @ts-ignore
         return import.meta.env[viteKey];
     }
-    // Check Node/Expo environment (process.env)
-    if (typeof process !== 'undefined' && process.env) {
-        return process.env[expoKey] || (nodeKey ? process.env[nodeKey] : undefined);
+    // Check Node/Expo environment ONLY if Vite's env isn't available
+    // Use careful check for process and process.env existence
+    else if (typeof process !== 'undefined' && typeof process.env !== 'undefined') {
+        console.log(`[API Client] Checking Expo/Node env var: ${expoKey}`);
+        return process.env[expoKey];
     }
+    // Fallback if neither environment object is found
+    console.log(`[API Client] No env var context found for ${viteKey} or ${expoKey}`);
     return undefined;
 }
 // --- End Helper ---
