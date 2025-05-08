@@ -7,3 +7,5 @@ Flask-SQLAlchemy
 Flask-Bcrypt
 Flask-JWT-Extended
 firebase-admin
+Flask-Migrate>=4.1.0
+psycopg2-binary>=2.9.10
