@@ -1,20 +1,16 @@
 // app/(tabs)/profile.tsx
 import React from 'react';
-// --- Import Platform ---
 import { View, Text, StyleSheet, Button, Alert, Platform, Pressable } from 'react-native';
-// --- End Import ---
 import { useAuth } from '@/src/context/AuthContext'; // Adjust path if needed
 import { Colors } from '@/src/constants/Colors'; // Adjust path if needed
 import { useColorScheme } from '@/src/hooks/useColorScheme'; // Adjust path if needed
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router'; // Keep useRouter import, though not used directly here
+// import { useRouter } from 'expo-router'; // Not needed
 
 export default function ProfileScreen() {
-  // --- Use signOut from context ---
-  const { user, signOut, isGuest } = useAuth(); // Correctly uses signOut
+  const { user, signOut, isGuest, exitGuestMode } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const themeColors = Colors[colorScheme];
-  // const router = useRouter(); // Not needed for navigateToLogin anymore
 
   const handleLogout = () => {
       Alert.alert(
@@ -22,27 +18,20 @@ export default function ProfileScreen() {
           "Are you sure you want to log out?",
           [
               { text: "Cancel", style: "cancel" },
-              // --- Call signOut ---
-              { text: "Logout", style: "destructive", onPress: signOut } // Uses signOut
-              // --- End Change ---
+              { text: "Logout", style: "destructive", onPress: signOut }
           ]
       );
   };
 
-  // --- Function for guests to navigate to login ---
   const navigateToLogin = () => {
-      // Call signOut from context. This will set user to null (if not already)
-      // AND set isGuest to false. The useEffect in _layout.tsx
-      // will detect this change and redirect to /login.
-      console.log("[ProfileScreen] Calling signOut to exit guest mode and trigger login redirect...");
-      signOut(); // Uses signOut
+      console.log("[ProfileScreen] Calling exitGuestMode to trigger login redirect...");
+      exitGuestMode();
   };
-  // --- End Function ---
 
-  // --- Determine text color for action buttons ---
+  // Determine text color for action buttons
   const actionButtonTextColor = colorScheme === 'dark' ? '#0a7ea4' : '#FFFFFF'; // Blueish in dark, White in light
-  // --- End Color Determination ---
-
+  // Determine background color for the info card
+  const infoContainerBackgroundColor = colorScheme === 'light' ? '#FFFFFF' : '#2C2C2E'; // White in light, Dark Gray in dark
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
@@ -51,7 +40,9 @@ export default function ProfileScreen() {
 
         {user ? (
           // --- Logged-in User View ---
-          <View style={styles.infoContainer}>
+          // --- Apply dynamic background to infoContainer ---
+          <View style={[styles.infoContainer, { backgroundColor: infoContainerBackgroundColor }]}>
+          {/* --- End Change --- */}
             <Text style={[styles.label, { color: themeColors.text }]}>Email:</Text>
             <Text style={[styles.infoText, { color: themeColors.text }]}>{user.email || 'N/A'}</Text>
 
@@ -61,9 +52,9 @@ export default function ProfileScreen() {
             {/* Logout Button */}
             <View style={styles.buttonContainer}>
                <Pressable
-                 onPress={handleLogout} // Calls handleLogout which uses signOut
+                 onPress={handleLogout}
                  style={({ pressed }) => [
-                   styles.actionButton,
+                   styles.actionButton, // Style includes shadow/elevation now
                    { backgroundColor: themeColors.tint },
                    pressed && styles.buttonPressed,
                  ]}
@@ -77,7 +68,9 @@ export default function ProfileScreen() {
           // --- End Logged-in User View ---
         ) : isGuest ? (
            // --- Guest User View ---
-           <View style={styles.infoContainer}>
+           // --- Apply dynamic background to infoContainer ---
+           <View style={[styles.infoContainer, { backgroundColor: infoContainerBackgroundColor }]}>
+           {/* --- End Change --- */}
              <Text style={[styles.guestMessage, { color: themeColors.text }]}>
                  You are currently using the app as a guest.
              </Text>
@@ -87,9 +80,9 @@ export default function ProfileScreen() {
              {/* Login/Sign Up Button */}
              <View style={styles.buttonContainer}>
                  <Pressable
-                   onPress={navigateToLogin} // Calls navigateToLogin which uses signOut
+                   onPress={navigateToLogin}
                    style={({ pressed }) => [
-                     styles.actionButton,
+                     styles.actionButton, // Style includes shadow/elevation now
                      { backgroundColor: themeColors.tint },
                      pressed && styles.buttonPressed,
                    ]}
@@ -112,7 +105,7 @@ export default function ProfileScreen() {
   );
 }
 
-// --- Styles ---
+// --- Updated Styles ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -131,14 +124,15 @@ const styles = StyleSheet.create({
       width: '100%',
       marginBottom: 30,
       padding: 20,
-      backgroundColor: Colors.light.background, // Needs theme adjustment if Colors.ts doesn't have dark.card
+      // backgroundColor set dynamically now
       borderRadius: 10,
+      // Shadow for iOS
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-      elevation: 3,
-      // Apply theme background color dynamically later if needed
+      shadowOffset: { width: 0, height: 2 }, // Adjusted shadow offset
+      shadowOpacity: 0.15, // Slightly increased opacity
+      shadowRadius: 4, // Increased radius
+      // Elevation for Android
+      elevation: 4, // Increased elevation
   },
   label: {
       fontSize: 14,
@@ -168,6 +162,16 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       justifyContent: 'center',
       marginTop: 10,
+      // --- Add Shadow/Elevation ---
+      shadowColor: "#000",
+      shadowOffset: {
+          width: 0,
+          height: 2,
+      },
+      shadowOpacity: 0.23,
+      shadowRadius: 2.62,
+      elevation: 4,
+      // --- End Shadow/Elevation ---
   },
   actionButtonText: {
       fontSize: 16,
