@@ -1,27 +1,36 @@
-# backend/Dockerfile
-
-# Use an official Python runtime as a parent image (choose a specific version)
+# Start from a Python base image
 FROM python:3.10-slim
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the requirements file into the container first
+# Set environment variables (Render will override PORT)
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+ENV FLASK_APP "app:create_app()" # Or your actual Flask app entry point for CLI
+# Add other environment variables like FLASK_ENV=production if needed
+
+# Install system dependencies if any (e.g., for psycopg2 if using PostgreSQL)
+# RUN apt-get update && apt-get install -y ... && rm -rf /var/lib/apt/lists/*
+
+# Copy the requirements file into the container
 COPY requirements.txt .
 
-# Install dependencies specified in requirements.txt
-RUN pip install --no-cache-dir --default-timeout=100 -r requirements.txt
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of your backend application code (including the 'app' package)
+# Copy the rest of the application code into the container
 COPY . .
 
-# Make port 8000 available to the world outside this container
-EXPOSE 8000
+# Make the entrypoint script executable
+RUN chmod +x ./entrypoint.sh
 
-# Command to run the application using Gunicorn with Application Factory
-# Tells Gunicorn to import the 'app' package and call the 'create_app()' function
-# located within it (in __init__.py) to get the Flask app instance.
-CMD ["gunicorn", "-w", "1", "--bind", "0.0.0.0:8000", "app:create_app()"]
+# Expose the port the app runs on (Render sets $PORT automatically)
+EXPOSE $PORT
 
-# Note: Environment variables like OPENAI_API_KEY, DATABASE_URL, JWT_SECRET_KEY, ALLOWED_ORIGINS
-# should be injected at runtime by the hosting platform or 'docker run' command.
+# Set the entrypoint to our script
+ENTRYPOINT ["./entrypoint.sh"]
+
+# CMD can be used to pass default arguments to ENTRYPOINT if needed,
+# but for a simple script execution, ENTRYPOINT is often sufficient.
+# If entrypoint.sh was just `gunicorn ...` then CMD would be ["gunicorn", "--bind", ...]
