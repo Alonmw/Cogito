@@ -4,31 +4,29 @@ import {
   ApiHistoryMessage,
   DialoguePayload,
   DialogueResponse,
-  ApiErrorResponse
+  ApiErrorResponse,
+  ConversationSummary,
+  HistoryListResponse,
+  ConversationMessagesResponse // Ensure this is imported
 } from '@socratic/common-types';
-
-// --- Removed environment variable checking logic ---
 
 // Function type for getting the auth token (platform-specific)
 export type GetIdTokenFunction = () => Promise<string | null>;
 
-// --- API Client Class ---
+// API Client Class
 export class ApiClient {
     private axiosInstance: AxiosInstance;
     private getIdToken: GetIdTokenFunction;
-    private baseUrl: string; // Store the base URL
 
-    // --- Constructor now accepts baseUrl directly ---
     constructor(getIdTokenFunc: GetIdTokenFunction, baseUrl: string) {
         if (!baseUrl) {
             throw new Error("ApiClient: baseUrl must be provided.");
         }
         this.getIdToken = getIdTokenFunc;
-        this.baseUrl = baseUrl;
-        console.log(`[API Client] Initializing with base URL: ${this.baseUrl}`);
+        console.log(`[API Client] Initializing with base URL: ${baseUrl}`);
 
         this.axiosInstance = axios.create({
-            baseURL: this.baseUrl, // Use the provided baseUrl
+            baseURL: baseUrl,
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -37,15 +35,13 @@ export class ApiClient {
         // Add request interceptor to attach auth token
         this.axiosInstance.interceptors.request.use(
             async (config: InternalAxiosRequestConfig) => {
-                // Add token only to relative paths (dialogue endpoint)
-                if (config.url === '/api/dialogue' && config.method === 'post') {
+                if (config.url?.startsWith('/api/dialogue') || config.url?.startsWith('/api/history')) {
                     try {
                         const idToken = await this.getIdToken();
                         if (idToken) {
-                            // console.log('[API Client Interceptor] Attaching Authorization header.');
                             config.headers.Authorization = `Bearer ${idToken}`;
                         } else {
-                            console.warn('[API Client Interceptor] No ID Token available.');
+                            console.warn('[API Client Interceptor] No ID Token available for protected route.');
                         }
                     } catch (error) {
                         console.error('[API Client Interceptor] Error getting ID token:', error);
@@ -56,39 +52,63 @@ export class ApiClient {
             (error) => Promise.reject(error)
         );
     }
-    // --- End Constructor Change ---
-
-    // --- API Methods (Remain the same) ---
 
     public async checkBackendConnection(): Promise<string | null> {
          try {
-            // Use relative path now, baseURL is set in instance
             const response = await this.axiosInstance.get<string>('/');
-            console.log('[API Client] Backend connection successful:', response.data);
             return response.data;
         } catch (error) {
-            console.error('[API Client] Error connecting to backend:', error);
             this.handleApiError(error, 'checkBackendConnection');
             return null;
         }
     }
 
-    public async postDialogue(history: ApiHistoryMessage[]): Promise<string | null> {
+    public async postDialogue(
+        history: ApiHistoryMessage[],
+        conversationId?: number
+    ): Promise<DialogueResponse | null> {
         const payload: DialoguePayload = { history };
-        // console.log('[API Client] Sending payload to /api/dialogue:', JSON.stringify(payload, null, 2));
+        if (conversationId !== undefined) {
+            payload.conversation_id = conversationId;
+        }
         try {
-            // Use relative path now
             const response = await this.axiosInstance.post<DialogueResponse>('/api/dialogue', payload);
-            console.log('[API Client] Received dialogue response:', response.data);
-            return response.data?.response ?? null;
+            return response.data ?? null;
         } catch (error) {
-            console.error('[API Client] Error posting dialogue:', error);
             this.handleApiError(error, 'postDialogue');
             return null;
         }
     }
 
-    // --- Private Error Handler (Remains the same) ---
+    public async getHistoryList(): Promise<ConversationSummary[] | null> {
+        try {
+            const response = await this.axiosInstance.get<HistoryListResponse>('/api/history');
+            return response.data?.history ?? [];
+        } catch (error) {
+            this.handleApiError(error, 'getHistoryList');
+            if (axios.isAxiosError(error) && error.response?.status === 403) {
+                throw error;
+            }
+            return null;
+        }
+    }
+
+    public async getConversationMessages(conversationId: number): Promise<ApiHistoryMessage[] | null> {
+      console.log(`[API Client] Fetching messages for conversation ID: ${conversationId}`);
+      try {
+        const response = await this.axiosInstance.get<ConversationMessagesResponse>(`/api/history/${conversationId}`);
+        console.log('[API Client] Received conversation messages:', response.data);
+        return response.data?.messages ?? [];
+      } catch (error) {
+        console.error(`[API Client] Error fetching messages for conversation ${conversationId}:`, error);
+        this.handleApiError(error, `getConversationMessages(${conversationId})`);
+        if (axios.isAxiosError(error) && error.response?.status === 403) {
+          throw error;
+        }
+        return null;
+      }
+    }
+
     private handleApiError(error: any, functionName: string): void {
         if (axios.isAxiosError(error)) {
             const status = error.response?.status;
@@ -100,4 +120,3 @@ export class ApiClient {
         }
     }
 }
-

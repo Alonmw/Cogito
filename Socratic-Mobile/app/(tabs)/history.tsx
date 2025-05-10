@@ -1,16 +1,14 @@
 // app/(tabs)/history.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import {View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, RefreshControl, Platform} from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, RefreshControl, Platform } from 'react-native';
 import { useAuth } from '@/src/context/AuthContext'; // Adjust path if needed
 import apiClientInstance from '@/src/services/api'; // Import shared API client
-import { ApiHistoryMessage, ConversationSummary } from '@socratic/common-types'; // Import shared types
+import { ConversationSummary } from '@socratic/common-types'; // Import shared types
 import { Colors } from '@/src/constants/Colors'; // Adjust path if needed
 import { useColorScheme } from '@/src/hooks/useColorScheme'; // Adjust path if needed
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router'; // Import useRouter and useFocusEffect
+import { useRouter, useFocusEffect } from 'expo-router';
 
-// Define a type for the conversation summaries expected from the backend
-// This might already exist in common-types, if so, import it.
 interface ConversationSummaryItem {
   id: number;
   title: string;
@@ -18,7 +16,7 @@ interface ConversationSummaryItem {
 }
 
 export default function HistoryScreen() {
-  const { user, isGuest } = useAuth();
+  const { user, isGuest, exitGuestMode } = useAuth(); // Added exitGuestMode
   const colorScheme = useColorScheme() ?? 'light';
   const themeColors = Colors[colorScheme];
   const router = useRouter();
@@ -29,83 +27,84 @@ export default function HistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchHistory = useCallback(async () => {
-    if (!user || isGuest) { // History is only for logged-in, non-guest users
-      setHistory([]); // Clear history if not eligible
+    if (!user || isGuest) {
+      setHistory([]);
       setError("Please log in to view your conversation history.");
+      setRefreshing(false); // Ensure refreshing stops
       return;
     }
-    if (isLoading) return; // Prevent multiple fetches
+    // This guard prevents re-entry if already loading and not a manual refresh
+    if (isLoading && !refreshing) {
+        console.log("[HistoryScreen] Fetch skipped, already loading and not a refresh.");
+        return;
+    }
 
     console.log("[HistoryScreen] Fetching conversation history...");
     setIsLoading(true);
-    setError(null);
+    if (!refreshing) setError(null); // Clear previous error only if not a refresh action
+
     try {
-      // Assuming your apiClientInstance has a method like getHistoryList()
-      // We need to add this method to the shared @socratic/api-client package first.
-      // For now, let's assume it returns a structure like { history: ConversationSummaryItem[] }
-      // const response = await apiClientInstance.getHistoryList(); // Placeholder
+      // --- Use the real API call ---
+      const fetchedHistory = await apiClientInstance.getHistoryList();
+      // --- End API call ---
 
-      // --- TEMPORARY MOCK API CALL ---
-      // Replace this with the actual API call once getHistoryList is implemented
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
-      const mockResponse = {
-          history: [
-              // { id: 1, title: "First thoughts on philosophy...", updated_at: new Date(Date.now() - 3600000).toISOString() },
-              // { id: 2, title: "Exploring the nature of reality...", updated_at: new Date().toISOString() },
-          ]
-      };
-      // --- END TEMPORARY MOCK ---
-
-      // TODO: Replace mockResponse with actual API call:
-      // const response = await apiClientInstance.getHistoryList();
-      // if (response && Array.isArray(response.history)) {
-      //   setHistory(response.history);
-      // } else {
-      //   console.warn("[HistoryScreen] Invalid history response:", response);
-      //   setError("Failed to load history or history is empty.");
-      //   setHistory([]); // Ensure history is an empty array on failure
-      // }
-
-      // Using mock for now
-      if (mockResponse && Array.isArray(mockResponse.history)) {
-        setHistory(mockResponse.history);
+      if (fetchedHistory && Array.isArray(fetchedHistory)) {
+        setHistory(fetchedHistory);
+        if (fetchedHistory.length === 0 && !error) { // Clear error if history is empty but no explicit fetch error
+            setError(null); // Clear error if successfully fetched empty history
+        }
       } else {
-        setError("Failed to load history or history is empty.");
+        console.warn("[HistoryScreen] getHistoryList returned null or invalid format.");
+        setError("Failed to load history.");
         setHistory([]);
       }
 
-    } catch (err) {
+    } catch (err: any) { // Catch errors, including the re-thrown 403
       console.error("[HistoryScreen] Error fetching history:", err);
-      setError("An error occurred while fetching your history.");
-      setHistory([]); // Ensure history is an empty array on error
+      if (err.response?.status === 403) {
+          setError(err.response?.data?.error || "Email verification required to access history.");
+      } else {
+          setError("An error occurred while fetching your history.");
+      }
+      setHistory([]);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [user, isGuest, isLoading]); // Added isLoading to dependencies
+  // isLoading removed from here, refreshing is kept
+  }, [user, isGuest, refreshing]);
 
-  // Fetch history when the screen comes into focus or when user/guest status changes
+  // Fetch history when the screen comes into focus
   useFocusEffect(
     useCallback(() => {
+      // The fetchHistory function now has its own guard against re-entry if already loading.
+      console.log("[HistoryScreen] Focus effect triggered. Calling fetchHistory.");
       fetchHistory();
-    }, [fetchHistory]) // fetchHistory is memoized with useCallback
+    // --- Removed isLoading from this dependency array ---
+    }, [fetchHistory]) // Only depend on fetchHistory. fetchHistory changes if user/isGuest/refreshing changes.
+    // --- End Change ---
   );
 
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchHistory();
-  }, [fetchHistory]);
+    console.log("[HistoryScreen] Refresh triggered");
+    setRefreshing(true); // This will cause fetchHistory to run due to dependency change
+  }, []);
 
   const handlePressConversation = (conversationId: number, title: string) => {
     console.log(`[HistoryScreen] Navigating to conversation ID: ${conversationId}`);
-    // Navigate to the dialogue screen, passing conversation ID and title
     router.push({
       pathname: '/(tabs)', // Navigate to the index (ChatScreen) of the (tabs) group
       params: { conversationId: conversationId, conversationTitle: title },
     });
   };
 
-  if (isLoading && history.length === 0 && !refreshing) {
+  const handleGuestGoToLogin = () => {
+      console.log("[HistoryScreen] Guest navigating to login, calling exitGuestMode.");
+      exitGuestMode();
+  };
+
+  // Initial loading state (only show if not refreshing and no error)
+  if (isLoading && history.length === 0 && !refreshing && !error) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background, justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={themeColors.tint} />
@@ -120,24 +119,27 @@ export default function HistoryScreen() {
         <Text style={[styles.title, { color: themeColors.text }]}>Conversation History</Text>
       </View>
 
-      {error && !isLoading && (
+      {/* Error Message or Login Prompt */}
+      {error && !isLoading && ( // Only show error if not loading
         <View style={styles.centeredMessageContainer}>
           <Text style={[styles.errorText, { color: themeColors.text, opacity: 0.7 }]}>{error}</Text>
           {(!user || isGuest) && (
-             <Pressable onPress={() => router.replace('/login')} style={styles.loginButton}>
+             <Pressable onPress={handleGuestGoToLogin} style={[styles.loginButton, {borderColor: themeColors.tint}]}>
                 <Text style={[styles.loginButtonText, {color: themeColors.tint}]}>Go to Login</Text>
              </Pressable>
           )}
         </View>
       )}
 
+      {/* Empty State (No error, not loading, no history) */}
       {!error && history.length === 0 && !isLoading && (
          <View style={styles.centeredMessageContainer}>
             <Text style={[styles.emptyText, { color: themeColors.text, opacity: 0.7 }]}>No conversation history found.</Text>
          </View>
       )}
 
-      {!error && history.length > 0 && (
+      {/* History List */}
+      {history.length > 0 && ( // Only render FlatList if there's history and no error blocking it
         <FlatList
           data={history}
           keyExtractor={(item) => item.id.toString()}
@@ -157,7 +159,7 @@ export default function HistoryScreen() {
             </Pressable>
           )}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.tint} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.tint} colors={[themeColors.tint]} progressBackgroundColor={themeColors.background} />
           }
           contentContainerStyle={styles.listContentContainer}
         />
@@ -172,10 +174,10 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 25 : 15, // Adjust for status bar
+    paddingTop: Platform.OS === 'android' ? 25 : 15,
     paddingBottom: 15,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    // borderBottomColor will be set by themeColors.tabIconDefault in parent ChatScreen
+    // borderBottomColor: themeColors.tabIconDefault, // Apply dynamically or ensure parent has it
   },
   title: {
     fontSize: 24,

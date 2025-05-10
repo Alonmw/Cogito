@@ -14,7 +14,7 @@ export interface ApiHistoryMessage {
  */
 export interface DialoguePayload {
     history: ApiHistoryMessage[];
-    // Add other potential payload fields here later if needed
+    conversation_id?: number; // <-- CRUCIAL: Ensure this line exists and is optional
 }
 
 /**
@@ -22,6 +22,7 @@ export interface DialoguePayload {
  */
 export interface DialogueResponse {
     response: string;
+    conversation_id: number; // Backend should return the ID of the active/new conversation
 }
 
 /**
@@ -31,18 +32,14 @@ export interface ApiErrorResponse {
     error: string;
 }
 
-// --- NEW: Add ConversationSummary ---
 /**
  * Represents a summary of a conversation for display in history lists.
  */
 export interface ConversationSummary {
-    id: number;       // Unique ID of the conversation
-    title: string;    // A title for the conversation (e.g., first user message)
-    updated_at: string; // ISO string timestamp of the last update
-    // Add other summary fields if needed, e.g., message_count
+    id: number;
+    title: string;
+    updated_at: string;
 }
-// --- End NEW ---
-
 
 /**
  * Represents the structure of the response from the GET /api/history endpoint.
@@ -57,7 +54,3 @@ export interface HistoryListResponse {
 export interface ConversationMessagesResponse {
     messages: ApiHistoryMessage[];
 }
-
-
-// Add other shared types here as needed, for example:
-// export interface UserProfile { ... }
