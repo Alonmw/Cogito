@@ -7,7 +7,7 @@ import {
   ApiErrorResponse,
   ConversationSummary,
   HistoryListResponse,
-  ConversationMessagesResponse // Ensure this is imported
+  ConversationMessagesResponse
 } from '@socratic/common-types';
 
 // Function type for getting the auth token (platform-specific)
@@ -35,6 +35,7 @@ export class ApiClient {
         // Add request interceptor to attach auth token
         this.axiosInstance.interceptors.request.use(
             async (config: InternalAxiosRequestConfig) => {
+                // Add token to dialogue and history endpoints
                 if (config.url?.startsWith('/api/dialogue') || config.url?.startsWith('/api/history')) {
                     try {
                         const idToken = await this.getIdToken();
@@ -108,6 +109,32 @@ export class ApiClient {
         return null;
       }
     }
+
+    // --- NEW: Delete Specific Conversation ---
+    public async deleteConversation(conversationId: number): Promise<boolean> {
+        console.log(`[API Client] Deleting conversation ID: ${conversationId}`);
+        try {
+            // The interceptor will add the Authorization header
+            const response = await this.axiosInstance.delete(`/api/history/${conversationId}`);
+            // Successful deletion often returns 200 OK or 204 No Content
+            if (response.status === 200 || response.status === 204) {
+                console.log(`[API Client] Successfully deleted conversation ID: ${conversationId}`);
+                return true;
+            }
+            // Handle other success statuses if your backend returns them differently
+            console.warn(`[API Client] Unexpected status after deleting conversation ${conversationId}: ${response.status}`);
+            return false; // Or throw an error for unexpected success codes
+        } catch (error) {
+            console.error(`[API Client] Error deleting conversation ${conversationId}:`, error);
+            this.handleApiError(error, `deleteConversation(${conversationId})`);
+            // Re-throw specific errors if the UI needs to react differently (e.g., 403, 404)
+            if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 404)) {
+                throw error;
+            }
+            return false;
+        }
+    }
+    // --- End Delete Specific Conversation ---
 
     private handleApiError(error: any, functionName: string): void {
         if (axios.isAxiosError(error)) {
