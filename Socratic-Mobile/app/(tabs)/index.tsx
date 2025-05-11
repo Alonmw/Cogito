@@ -7,12 +7,12 @@ import {
   User,
   Bubble, // Keep Bubble import
   BubbleProps,
-  // InputToolbar, // Keep these commented out until text error is resolved
-  // InputToolbarProps,
-  // Composer,
-  // ComposerProps,
-  // Send,
-  // SendProps
+  InputToolbar, // Keep these commented out until text error is resolved
+  InputToolbarProps,
+  Composer,
+  ComposerProps,
+  Send,
+  SendProps
 } from 'react-native-gifted-chat';
 import { useAuth } from '@/src/context/AuthContext';
 import apiClientInstance from '@/src/services/api';
@@ -22,6 +22,7 @@ import ChatHeader from '@/src/components/ChatHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiHistoryMessage, DialogueResponse } from '@socratic/common-types';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import {Ionicons} from "@expo/vector-icons";
 
 // Define user objects for Gifted Chat
 const USER: User = { _id: 1, name: 'User' };
@@ -161,17 +162,66 @@ export default function ChatScreen() {
       </View>
     );
   };
-  // --- End Minimal Bubble Renderer ---
 
+
+  const renderCustomInputToolbar = (props: InputToolbarProps<IMessage>) => (
+  <InputToolbar
+    {...props}
+    containerStyle={{
+      backgroundColor: themeColors.background,
+      borderTopColor: themeColors.tint,
+      borderTopWidth: 1,
+      padding: 5,
+    }}
+    primaryStyle={{ alignItems: 'center' }}
+  />
+);
+
+  const renderCustomComposer = (props: ComposerProps) => (
+  <Composer
+    {...props}
+    textInputStyle={{
+      color: themeColors.text,
+      backgroundColor: colorScheme === 'dark' ? '#1E1E1E' : '#F0F0F0',
+      paddingHorizontal: 12,
+      borderRadius: 20,
+    }}
+  />
+);
+
+const renderCustomSend = (props: SendProps<IMessage>) => (
+  <Send {...props}>
+    <View style={{ marginRight: 10, marginBottom: 5 }}>
+      <Ionicons name="send" size={24} color={themeColors.tint} />
+    </View>
+  </Send>
+);
+
+
+  // --- End Minimal Bubble Renderer ---
+if (isLoadingHistory) {
+  return (
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          backgroundColor: themeColors.background,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+      ]}
+    >
+      <ActivityIndicator size="large" color={themeColors.tint} />
+      <Text style={{ color: themeColors.text, marginTop: 10 }}>
+        Loading conversation...
+      </Text>
+    </SafeAreaView>
+  );
+}
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
       <ChatHeader onClearChat={handleClearChat} />
-      <KeyboardAvoidingView
-        style={styles.chatContainer}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0} // Adjust as needed
-      >
         <GiftedChat
             messages={messages}
             onSend={newMessages => onSend(newMessages)}
@@ -184,11 +234,10 @@ export default function ChatScreen() {
             showAvatarForEveryMessage={false}
             renderBubble={renderCustomBubble} // Using the simplified bubble
             // Custom input renderers remain commented out
-            // renderInputToolbar={renderCustomInputToolbar}
-            // renderComposer={renderCustomComposer}
-            // renderSend={renderCustomSend}
+            renderInputToolbar={renderCustomInputToolbar}
+            renderComposer={renderCustomComposer}
+            renderSend={renderCustomSend}
         />
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
