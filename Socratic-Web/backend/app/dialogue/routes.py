@@ -1,5 +1,5 @@
 # backend/app/dialogue/routes.py
-# v11: Correctly handle new vs. continue conversation based on incoming conversation_id
+# v9: Added GET /api/history and GET /api/history/<id> endpoints
 
 from flask import Blueprint, request, jsonify, current_app
 from openai import OpenAIError
@@ -181,4 +181,106 @@ def handle_dialogue():
         current_app.logger.error(f"POST /dialogue - Error handling request / JSON parsing for {user_log_id}: {e}",
                                  exc_info=True)
         return jsonify({"error": "An internal server error occurred"}), 500
+
+
+# --- NEW: Get Conversation History List ---
+@dialogue_bp.route('/history', methods=['GET'])
+def get_history_list():
+    """Retrieves a list of conversation summaries for the authenticated user."""
+    decoded_token = verify_token()
+    if not decoded_token:
+        return jsonify({"error": "Authorization required: Invalid or missing token."}), 401
+
+    firebase_uid = decoded_token.get('uid')
+    is_email_verified = decoded_token.get('email_verified', False)
+
+    if not firebase_uid:  # Should not happen if token is valid
+        return jsonify({"error": "Invalid token payload."}), 401
+
+    # --- Require email verification to access history ---
+    if not is_email_verified:
+        current_app.logger.warning(f"GET /history - Access denied for unverified user UID: {firebase_uid}")
+        return jsonify({"error": "Email verification required to access chat history."}), 403
+    # --- End Email Verification Check ---
+
+    user = db.session.scalars(db.select(User).filter_by(firebase_uid=firebase_uid)).first()
+    if not user:
+        current_app.logger.info(f"GET /history - No user found in DB for UID: {firebase_uid}. Returning empty history.")
+        return jsonify({"history": []})  # No user record means no history
+
+    # Get max 10 most recent conversations
+    conversations = db.session.scalars(
+        db.select(Conversation)
+        .filter_by(user_id=user.id)
+        .order_by(Conversation.updated_at.desc())
+        .limit(current_app.config.get('MAX_HISTORY_ITEMS', 10))
+    ).all()
+
+    history_list = [
+        {
+            "id": conv.id,
+            "title": conv.title or f"Conversation from {conv.created_at.strftime('%Y-%m-%d %H:%M')}",
+            "updated_at": conv.updated_at.isoformat()  # Send as ISO string
+        }
+        for conv in conversations
+    ]
+    current_app.logger.info(
+        f"GET /history - Returning {len(history_list)} conversation summaries for user UID: {firebase_uid}")
+    return jsonify({"history": history_list})
+
+
+# --- End Get History List ---
+
+
+# --- NEW: Get Specific Conversation Messages ---
+@dialogue_bp.route('/history/<int:conversation_id>', methods=['GET'])
+def get_conversation_messages(conversation_id: int):
+    """Retrieves all messages for a specific conversation ID,
+       belonging to the authenticated user."""
+    decoded_token = verify_token()
+    if not decoded_token:
+        return jsonify({"error": "Authorization required: Invalid or missing token."}), 401
+
+    firebase_uid = decoded_token.get('uid')
+    is_email_verified = decoded_token.get('email_verified', False)
+
+    if not firebase_uid:
+        return jsonify({"error": "Invalid token payload."}), 401
+
+    # --- Require email verification to access specific conversation ---
+    if not is_email_verified:
+        current_app.logger.warning(
+            f"GET /history/{conversation_id} - Access denied for unverified user UID: {firebase_uid}")
+        return jsonify({"error": "Email verification required to access chat history."}), 403
+    # --- End Email Verification Check ---
+
+    user = db.session.scalars(db.select(User).filter_by(firebase_uid=firebase_uid)).first()
+    if not user:
+        current_app.logger.warning(f"GET /history/{conversation_id} - No user found in DB for UID: {firebase_uid}")
+        return jsonify({"error": "User not found."}), 404  # Or 403 if preferred
+
+    conversation = db.session.scalars(
+        db.select(Conversation)
+        .filter_by(id=conversation_id, user_id=user.id)  # Ensure conversation belongs to user
+    ).first()
+
+    if not conversation:
+        current_app.logger.warning(
+            f"GET /history/{conversation_id} - Conversation not found or not owned by user UID: {firebase_uid}")
+        return jsonify({"error": "Conversation not found or access denied."}), 404
+
+    messages = db.session.scalars(
+        db.select(Message)
+        .filter_by(conversation_id=conversation.id)
+        .order_by(Message.timestamp.asc())  # Messages in chronological order
+    ).all()
+
+    message_list = [
+        {"role": msg.role, "content": msg.content, "timestamp": msg.timestamp.isoformat()}
+        for msg in messages
+    ]
+    current_app.logger.info(
+        f"GET /history/{conversation_id} - Returning {len(message_list)} messages for user UID: {firebase_uid}")
+    return jsonify({"messages": message_list})
+# --- End Get Specific Conversation ---
 
