@@ -1,6 +1,6 @@
 // app/(tabs)/history.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, RefreshControl, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, RefreshControl, Platform, Alert } from 'react-native';
 import { useAuth } from '@/src/context/AuthContext';
 import apiClientInstance from '@/src/services/api';
 import { ConversationSummary } from '@socratic/common-types';
@@ -20,6 +20,7 @@ export default function HistoryScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const fetchHistory = useCallback(async () => {
     if (!user || isGuest) {
@@ -57,11 +58,12 @@ export default function HistoryScreen() {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [user, isGuest, refreshing, isLoading]); // Added isLoading to prevent re-fetch if already loading
+  }, [user, isGuest, refreshing, isLoading]);
 
   useFocusEffect(
     useCallback(() => {
       fetchHistory();
+      // --- Removed setIsEditMode(false) from here ---
     }, [fetchHistory])
   );
 
@@ -70,6 +72,7 @@ export default function HistoryScreen() {
   }, []);
 
   const handlePressConversation = (conversationId: number, title: string) => {
+    if (isEditMode) return;
     router.push({
       pathname: '/(tabs)',
       params: { conversationId: conversationId.toString(), conversationTitle: title },
@@ -80,15 +83,52 @@ export default function HistoryScreen() {
       exitGuestMode();
   };
 
+  const toggleEditMode = () => {
+    setIsEditMode(!isEditMode);
+  };
+
+  const handleDeleteConversation = useCallback(async (conversationId: number) => {
+    Alert.alert(
+      "Delete Conversation",
+      "Are you sure you want to permanently delete this conversation?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const success = await apiClientInstance.deleteConversation(conversationId);
+              if (success) {
+                setHistory((prevHistory) => {
+                    const updatedHistory = prevHistory.filter(conv => conv.id !== conversationId);
+                    if (updatedHistory.length === 0) {
+                        setIsEditMode(false); // Exit edit mode if no items left
+                    }
+                    return updatedHistory;
+                });
+                Alert.alert("Success", "Conversation deleted.");
+              } else {
+                Alert.alert("Error", "Failed to delete conversation. Please try again.");
+              }
+            } catch (error: any) {
+              Alert.alert("Error", error.response?.data?.error || "An error occurred while deleting.");
+            }
+          },
+        },
+      ]
+    );
+  }, [history]); // Dependency on history for checking length after delete
+
   const renderHistoryItem = ({ item }: { item: ConversationSummary }) => (
     <Pressable
       style={({ pressed }) => [
         styles.itemContainer,
         {
-          backgroundColor: colorScheme === 'light' ? '#FFFFFF' : Colors.dark.background, // Card background
-          borderColor: themeColors.tabIconDefault, // Subtle border
+          backgroundColor: colorScheme === 'light' ? '#FFFFFF' : themeColors.background,
+          borderColor: themeColors.tabIconDefault,
         },
-        pressed && { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : '#333333' }
+        pressed && !isEditMode && { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : '#333333' }
       ]}
       onPress={() => handlePressConversation(item.id, item.title)}
     >
@@ -100,7 +140,13 @@ export default function HistoryScreen() {
           Last updated: {new Date(item.updated_at).toLocaleDateString()} {new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </Text>
       </View>
-      <Ionicons name="chevron-forward-outline" size={22} color={themeColors.tabIconDefault} />
+      {isEditMode ? (
+        <Pressable onPress={() => handleDeleteConversation(item.id)} style={styles.deleteButton}>
+          <Ionicons name="trash-bin-outline" size={24} color={Colors.light.tint} />
+        </Pressable>
+      ) : (
+        <Ionicons name="chevron-forward-outline" size={22} color={themeColors.tabIconDefault} />
+      )}
     </Pressable>
   );
 
@@ -117,38 +163,47 @@ export default function HistoryScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={styles.headerContainer}>
+        <View style={styles.headerSidePlaceholder} />
         <Text style={[styles.title, { color: themeColors.text }]}>Conversation History</Text>
+        {(history.length > 0 || isEditMode) && user && !isGuest ? (
+            <Pressable onPress={toggleEditMode} style={styles.editButton}>
+                <Text style={[styles.editButtonText, { color: themeColors.tint }]}>
+                    {isEditMode ? "Done" : "Edit"}
+                </Text>
+            </Pressable>
+        ) : (
+            <View style={styles.headerSidePlaceholder} />
+        )}
       </View>
 
-      {error && !isLoading && (
+      {error && !isLoading ? (
         <View style={styles.centeredMessageContainer}>
           <Text style={[styles.errorText, { color: themeColors.text, opacity: 0.7 }]}>{error}</Text>
-          {(!user || isGuest) && (
+          {(!user || isGuest) ? (
              <Pressable onPress={handleGuestGoToLogin} style={[styles.loginButton, {borderColor: themeColors.tint}]}>
                 <Text style={[styles.loginButtonText, {color: themeColors.tint}]}>Go to Login</Text>
              </Pressable>
-          )}
+          ) : null}
         </View>
-      )}
+      ) : null}
 
-      {!error && history.length === 0 && !isLoading && (
+      {!error && history.length === 0 && !isLoading ? (
          <View style={styles.centeredMessageContainer}>
             <Text style={[styles.emptyText, { color: themeColors.text, opacity: 0.7 }]}>No conversation history found.</Text>
          </View>
-      )}
+      ) : null}
 
-      {history.length > 0 && (
+      {history.length > 0 ? (
         <FlatList
           data={history}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={renderHistoryItem} // Use the new render function
+          renderItem={renderHistoryItem}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.tint} colors={[themeColors.tint]} progressBackgroundColor={themeColors.background} />
           }
           contentContainerStyle={styles.listContentContainer}
-          ItemSeparatorComponent={() => <View style={styles.separator} />} // Add separator
         />
-      )}
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -158,56 +213,66 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerContainer: {
-    paddingHorizontal: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 15,
     paddingTop: Platform.OS === 'android' ? 25 : 15,
     paddingBottom: 15,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    // borderBottomColor dynamically set by themeColors.background in parent or themeColors.tabIconDefault
+  },
+  headerSidePlaceholder: {
+    width: 60,
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
   },
+  editButton: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    minWidth: 60,
+    alignItems: 'flex-end',
+  },
+  editButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
   listContentContainer: {
-    paddingHorizontal: 10, // Add horizontal padding to the list itself
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   itemContainer: {
-    flexDirection: 'row', // Align icon and text horizontally
-    alignItems: 'center', // Center items vertically
-    paddingVertical: 15,
-    paddingHorizontal: 15, // Padding inside the card
-    // Removed borderBottomWidth, using ItemSeparatorComponent now
-    borderRadius: 8, // Rounded corners for card look
-    marginVertical: 5, // Space between cards
-    // Shadow for iOS
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    marginVertical: 6,
+    borderWidth: StyleSheet.hairlineWidth,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    // Elevation for Android
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 1.5,
+    elevation: 2,
   },
-  itemTextContainer: { // Container for title and date
-    flex: 1, // Allow text to take available space
-    marginRight: 10, // Space before the chevron icon
+  itemTextContainer: {
+    flex: 1,
+    marginRight: 10,
   },
   itemTitle: {
     fontSize: 16,
-    fontWeight: '600', // Bolder title
-    marginBottom: 5, // More space below title
+    fontWeight: '600',
+    marginBottom: 5,
   },
   itemDate: {
-    fontSize: 13, // Slightly larger date
-    opacity: 0.8, // Slightly dimmer date
+    fontSize: 13,
+    opacity: 0.8,
   },
-  separator: { // Style for the separator
-    height: 0, // No visible separator if using marginVertical on items
-    // If you want a line separator instead of space:
-    // height: StyleSheet.hairlineWidth,
-    // backgroundColor: Colors.light.tabIconDefault, // Or theme color
-    // marginHorizontal: 15,
+  deleteButton: {
+    padding: 8,
+    marginLeft: 10,
   },
   centeredMessageContainer: {
     flex: 1,

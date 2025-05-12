@@ -115,7 +115,7 @@ export class ApiClient {
         console.log(`[API Client] Deleting conversation ID: ${conversationId}`);
         try {
             // The interceptor will add the Authorization header
-            const response = await this.axiosInstance.delete(`/api/history/${conversationId}`);
+            const response = await this.axiosInstance.delete(`api/history/${conversationId}`);
             // Successful deletion often returns 200 OK or 204 No Content
             if (response.status === 200 || response.status === 204) {
                 console.log(`[API Client] Successfully deleted conversation ID: ${conversationId}`);
