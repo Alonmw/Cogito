@@ -36,9 +36,6 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  useEffect(() => {
-    clearAuthErrors();
-  }, [isLoginView, clearAuthErrors]);
 
   const googleButtonTextColor = colorScheme === 'dark' ? '#0a7ea4' : themeColors.tint;
   const googleButtonBackgroundColor = colorScheme === 'light' ? '#F0F0F0' : '#F2F2F7';
@@ -76,7 +73,6 @@ export default function LoginScreen() {
       setName('');
       setEmail('');
       setPassword('');
-      clearAuthErrors();
   };
 
   return (
