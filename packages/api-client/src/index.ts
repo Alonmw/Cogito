@@ -10,10 +10,8 @@ import {
   ConversationMessagesResponse
 } from '@socratic/common-types';
 
-// Function type for getting the auth token (platform-specific)
 export type GetIdTokenFunction = () => Promise<string | null>;
 
-// API Client Class
 export class ApiClient {
     private axiosInstance: AxiosInstance;
     private getIdToken: GetIdTokenFunction;
@@ -37,15 +35,18 @@ export class ApiClient {
             async (config: InternalAxiosRequestConfig) => {
                 // Add token to dialogue and history endpoints
                 if (config.url?.startsWith('/api/dialogue') || config.url?.startsWith('/api/history')) {
+                    console.log(`[API Client Interceptor] Request to protected route: ${config.url}`); // Log which route
                     try {
                         const idToken = await this.getIdToken();
                         if (idToken) {
+                            // Log only a portion of the token for security/brevity
+                            console.log('[API Client Interceptor] Token retrieved, attaching Authorization header (first 15 chars):', idToken.substring(0, 15) + "...");
                             config.headers.Authorization = `Bearer ${idToken}`;
                         } else {
-                            console.warn('[API Client Interceptor] No ID Token available for protected route.');
+                            console.warn('[API Client Interceptor] No ID Token available from getIdToken function.');
                         }
                     } catch (error) {
-                        console.error('[API Client Interceptor] Error getting ID token:', error);
+                        console.error('[API Client Interceptor] Error getting ID token for header:', error);
                     }
                 }
                 return config;
@@ -82,26 +83,29 @@ export class ApiClient {
     }
 
     public async getHistoryList(): Promise<ConversationSummary[] | null> {
+        console.log('[API Client] Attempting to fetch history list from /api/history'); // Added log
         try {
             const response = await this.axiosInstance.get<HistoryListResponse>('/api/history');
+            console.log('[API Client] Received history list response:', response.data);
             return response.data?.history ?? [];
         } catch (error) {
+            console.error('[API Client] Error fetching history list:', error); // Keep detailed error log
             this.handleApiError(error, 'getHistoryList');
             if (axios.isAxiosError(error) && error.response?.status === 403) {
-                throw error;
+                throw error; // Re-throw to be caught by the calling component
             }
             return null;
         }
     }
 
     public async getConversationMessages(conversationId: number): Promise<ApiHistoryMessage[] | null> {
-      console.log(`[API Client] Fetching messages for conversation ID: ${conversationId}`);
+      console.log(`[API Client] Attempting to fetch messages for conversation ID: ${conversationId}`); // Added log
       try {
         const response = await this.axiosInstance.get<ConversationMessagesResponse>(`/api/history/${conversationId}`);
         console.log('[API Client] Received conversation messages:', response.data);
         return response.data?.messages ?? [];
       } catch (error) {
-        console.error(`[API Client] Error fetching messages for conversation ${conversationId}:`, error);
+        console.error(`[API Client] Error fetching messages for conversation ${conversationId}:`, error); // Keep detailed error log
         this.handleApiError(error, `getConversationMessages(${conversationId})`);
         if (axios.isAxiosError(error) && error.response?.status === 403) {
           throw error;
@@ -110,31 +114,25 @@ export class ApiClient {
       }
     }
 
-    // --- NEW: Delete Specific Conversation ---
     public async deleteConversation(conversationId: number): Promise<boolean> {
-        console.log(`[API Client] Deleting conversation ID: ${conversationId}`);
+        console.log(`[API Client] Attempting to delete conversation ID: ${conversationId}`); // Added log
         try {
-            // The interceptor will add the Authorization header
-            const response = await this.axiosInstance.delete(`api/history/${conversationId}`);
-            // Successful deletion often returns 200 OK or 204 No Content
+            const response = await this.axiosInstance.delete(`/api/history/${conversationId}`);
             if (response.status === 200 || response.status === 204) {
                 console.log(`[API Client] Successfully deleted conversation ID: ${conversationId}`);
                 return true;
             }
-            // Handle other success statuses if your backend returns them differently
             console.warn(`[API Client] Unexpected status after deleting conversation ${conversationId}: ${response.status}`);
-            return false; // Or throw an error for unexpected success codes
+            return false;
         } catch (error) {
-            console.error(`[API Client] Error deleting conversation ${conversationId}:`, error);
+            console.error(`[API Client] Error deleting conversation ${conversationId}:`, error); // Keep detailed error log
             this.handleApiError(error, `deleteConversation(${conversationId})`);
-            // Re-throw specific errors if the UI needs to react differently (e.g., 403, 404)
             if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 404)) {
                 throw error;
             }
             return false;
         }
     }
-    // --- End Delete Specific Conversation ---
 
     private handleApiError(error: any, functionName: string): void {
         if (axios.isAxiosError(error)) {

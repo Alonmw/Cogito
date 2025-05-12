@@ -261,6 +261,7 @@ def get_conversation_messages(conversation_id: int):
 def delete_conversation(conversation_id: int):
     """Deletes a specific conversation and its messages for the authenticated user."""
     decoded_token = verify_token()
+    current_app.logger.info(f'token content:  {decoded_token}')
     if not decoded_token:
         current_app.logger.warning(f"DELETE /history/{conversation_id} - Unauthorized: Missing or invalid token.")
         return jsonify({"error": "Authorization required: Invalid or missing token."}), 401

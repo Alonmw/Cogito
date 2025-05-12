@@ -18,7 +18,7 @@ def create_app(config_class=Config):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config_class)
     print(f"Instance path: {app.instance_path}")
-
+    app.logger.setLevel(logging.INFO)
     if not app.debug and not app.testing:  # Avoid double logging in dev
         if not app.logger.handlers:  # Check if handlers are already added
             app.logger.setLevel(logging.INFO)
