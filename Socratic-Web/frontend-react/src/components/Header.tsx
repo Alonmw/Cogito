@@ -20,7 +20,7 @@ const Header: React.FC<HeaderProps> = ({ onClearChat }) => { // Receive prop
   return (
     <header className="p-4 border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-between items-center flex-shrink-0">
       <h1 className="text-lg font-serif font-bold text-gray-800 dark:text-gray-100">
-        Socratic Partner
+        Socratic Questioner
       </h1>
       <div className="flex items-center space-x-3">
         {/* Clear Chat button - now calls prop */}
@@ -28,7 +28,7 @@ const Header: React.FC<HeaderProps> = ({ onClearChat }) => { // Receive prop
           onClick={onClearChat} // Use the prop here
           className="text-sm bg-transparent border border-gray-500 text-gray-600 dark:border-gray-400 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 py-1 px-3 rounded transition duration-150"
         >
-          Clear Chat
+          New Chat
         </button>
 
         {/* Show Guest status or Logout button based on context state */}

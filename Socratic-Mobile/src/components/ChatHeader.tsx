@@ -20,10 +20,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClearChat }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background, borderBottomColor: themeColors.tabIconDefault }]}>
-      <Text style={[styles.title, { color: themeColors.text }]}>Socratic Partner</Text>
+      <Text style={[styles.title, { color: themeColors.text }]}>Socratic Questioner</Text>
       <View style={styles.buttonContainer}>
         <Pressable onPress={onClearChat} style={[styles.button, { borderColor: themeColors.tint }]}>
-           <Text style={[styles.buttonText, { color: themeColors.tint }]}>Clear Chat</Text>
+           <Text style={[styles.buttonText, { color: themeColors.tint }]}>New Chat</Text>
         </Pressable>
         {user ? (
           <Pressable onPress={signOut} style={[styles.button, { borderColor: themeColors.tint }]}>

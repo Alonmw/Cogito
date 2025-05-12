@@ -8,7 +8,7 @@ import { Colors } from '@/src/constants/Colors';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons'; // Import an icon library
+import { Ionicons } from '@expo/vector-icons';
 
 export default function HistoryScreen() {
   const { user, isGuest, exitGuestMode } = useAuth();
@@ -29,50 +29,61 @@ export default function HistoryScreen() {
       setRefreshing(false);
       return;
     }
+    // This guard prevents re-entry if already loading and not a manual refresh
     if (isLoading && !refreshing) {
+        console.log("[HistoryScreen] Fetch skipped, already loading and not a refresh.");
         return;
     }
 
+    console.log("[HistoryScreen] Fetching conversation history...");
     setIsLoading(true);
-    if (!refreshing) setError(null);
+    if (!refreshing) setError(null); // Clear previous error only if not a refresh action
 
     try {
       const fetchedHistory = await apiClientInstance.getHistoryList();
       if (fetchedHistory && Array.isArray(fetchedHistory)) {
         setHistory(fetchedHistory);
         if (fetchedHistory.length === 0 && !error) {
-            setError(null);
+            setError(null); // Clear error if successfully fetched empty history
         }
       } else {
+        console.warn("[HistoryScreen] getHistoryList returned null or invalid format.");
         setError("Failed to load history.");
-        setHistory([]);
+        setHistory([]); // Ensure history is an empty array on failure
       }
     } catch (err: any) {
+      console.error("[HistoryScreen] Error fetching history:", err);
       if (err.response?.status === 403) {
           setError(err.response?.data?.error || "Email verification required to access history.");
       } else {
           setError("An error occurred while fetching your history.");
       }
-      setHistory([]);
+      setHistory([]); // Ensure history is an empty array on error
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [user, isGuest, refreshing, isLoading]);
+  // --- Removed isLoading from dependency array ---
+  }, [user, isGuest, refreshing]); // Only user, isGuest, and refreshing should cause re-creation of fetchHistory
+  // --- End Change ---
 
   useFocusEffect(
     useCallback(() => {
+      // The fetchHistory function itself now contains the isLoading guard.
+      console.log("[HistoryScreen] Focus effect triggered. Calling fetchHistory.");
       fetchHistory();
-      // --- Removed setIsEditMode(false) from here ---
-    }, [fetchHistory])
+      setIsEditMode(false); // Reset edit mode when screen comes into focus
+    }, [fetchHistory]) // fetchHistory will only change if user, isGuest, or refreshing changes
   );
 
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
+    console.log("[HistoryScreen] Refresh triggered");
+    setRefreshing(true); // This will cause fetchHistory to re-run
   }, []);
 
   const handlePressConversation = (conversationId: number, title: string) => {
     if (isEditMode) return;
+    console.log(`[HistoryScreen] Navigating to conversation ID: ${conversationId}`);
     router.push({
       pathname: '/(tabs)',
       params: { conversationId: conversationId.toString(), conversationTitle: title },
@@ -80,6 +91,7 @@ export default function HistoryScreen() {
   };
 
   const handleGuestGoToLogin = () => {
+      console.log("[HistoryScreen] Guest navigating to login, calling exitGuestMode.");
       exitGuestMode();
   };
 
@@ -97,13 +109,14 @@ export default function HistoryScreen() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
+            console.log(`[HistoryScreen] Deleting conversation ID: ${conversationId}`);
             try {
               const success = await apiClientInstance.deleteConversation(conversationId);
               if (success) {
                 setHistory((prevHistory) => {
                     const updatedHistory = prevHistory.filter(conv => conv.id !== conversationId);
                     if (updatedHistory.length === 0) {
-                        setIsEditMode(false); // Exit edit mode if no items left
+                        setIsEditMode(false);
                     }
                     return updatedHistory;
                 });
@@ -112,13 +125,14 @@ export default function HistoryScreen() {
                 Alert.alert("Error", "Failed to delete conversation. Please try again.");
               }
             } catch (error: any) {
+              console.error("[HistoryScreen] Error deleting conversation:", error);
               Alert.alert("Error", error.response?.data?.error || "An error occurred while deleting.");
             }
           },
         },
       ]
     );
-  }, [history]); // Dependency on history for checking length after delete
+  }, [history]);
 
   const renderHistoryItem = ({ item }: { item: ConversationSummary }) => (
     <Pressable
