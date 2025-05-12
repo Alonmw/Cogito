@@ -1,5 +1,5 @@
 // src/screens/LoginScreen.tsx
-import React, { useState, useEffect } from 'react'; // Added useEffect
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ActivityIndicator, Pressable,
   Platform, Image, TextInput, ScrollView, Alert
@@ -22,11 +22,11 @@ export default function LoginScreen() {
     signInWithEmail,
     isLoggingIn,
     emailSignInError,
-    sendPasswordReset, // <-- Get reset function
-    isSendingPasswordReset, // <-- Get reset loading state
-    passwordResetError, // <-- Get reset error state
-    passwordResetSent, // <-- Get reset success state
-    clearAuthErrors, // <-- Get clear errors function
+    sendPasswordReset,
+    isSendingPasswordReset,
+    passwordResetError,
+    passwordResetSent,
+    clearAuthErrors,
   } = useAuth();
   const colorScheme = useColorScheme();
   const themeColors = Colors[colorScheme ?? 'light'];
@@ -36,31 +36,23 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Clear errors when switching views
   useEffect(() => {
     clearAuthErrors();
   }, [isLoginView, clearAuthErrors]);
 
-
-  // Determine text/background colors for Google button
   const googleButtonTextColor = colorScheme === 'dark' ? '#0a7ea4' : themeColors.tint;
   const googleButtonBackgroundColor = colorScheme === 'light' ? '#F0F0F0' : '#F2F2F7';
   const googleButtonBorderColor = themeColors.tabIconDefault;
-
-  // Determine text color for Login/Register buttons
   const actionButtonTextColor = colorScheme === 'dark' ? '#0a7ea4' : '#FFFFFF';
 
-  // Handle Registration Button Press
   const handleRegister = () => {
       if (!name.trim() || !email.trim() || !password.trim()) {
           Alert.alert("Missing Fields", "Please fill in all registration fields.");
           return;
       }
       registerWithEmail(name, email, password);
-      // Registration success/verification message is handled by Alert in context for now
   };
 
-  // Handle Login Button Press
   const handleLogin = () => {
       if (!email.trim() || !password.trim()) {
           Alert.alert("Missing Fields", "Please enter email and password.");
@@ -69,29 +61,22 @@ export default function LoginScreen() {
       signInWithEmail(email, password);
   };
 
-  // --- Handle Forgot Password Press ---
   const handleForgotPassword = () => {
       if (!email.trim()) {
           Alert.alert("Missing Email", "Please enter your email address in the field above first.");
           return;
       }
-      // Call the function from context, passing the current email value
       sendPasswordReset(email);
   };
-  // --- End Handle Forgot Password ---
 
-
-  // Determine if any auth action is in progress
   const authInProgress = isSigningIn || isRegistering || isLoggingIn || isSendingPasswordReset;
 
-  // Function to toggle between Login and Register views
   const toggleView = () => {
       setIsLoginView(!isLoginView);
-      // Clear form fields when toggling
       setName('');
       setEmail('');
       setPassword('');
-      clearAuthErrors(); // Clear errors when switching views
+      clearAuthErrors();
   };
 
   return (
@@ -103,7 +88,6 @@ export default function LoginScreen() {
         {isLoginView ? 'Sign in to your account' : 'Create a new account'}
       </Text>
 
-      {/* --- Conditionally Render Login or Register Form --- */}
       {isLoginView ? (
         // --- Login Form ---
         <View style={styles.formContainer}>
@@ -112,7 +96,7 @@ export default function LoginScreen() {
             placeholder="Email"
             placeholderTextColor={themeColors.tabIconDefault}
             value={email}
-            onChangeText={setEmail} // Allow email input for password reset
+            onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
             editable={!authInProgress}
@@ -126,11 +110,9 @@ export default function LoginScreen() {
             secureTextEntry
             editable={!authInProgress}
           />
-          {/* Forgot Password Link */}
           <Pressable onPress={handleForgotPassword} disabled={authInProgress} style={styles.forgotPasswordButton}>
               <Text style={[styles.forgotPasswordText, { color: themeColors.tabIconDefault }]}>Forgot Password?</Text>
           </Pressable>
-          {/* Password Reset Feedback */}
           {isSendingPasswordReset && (
               <View style={styles.feedbackContainer}>
                   <ActivityIndicator size="small" color={themeColors.text} />
@@ -147,8 +129,6 @@ export default function LoginScreen() {
                   <Text style={[styles.feedbackText, styles.errorText]}>Error: {passwordResetError}</Text>
               </View>
           )}
-          {/* End Password Reset Feedback */}
-
           <Pressable
             onPress={handleLogin}
             disabled={authInProgress}
@@ -161,7 +141,6 @@ export default function LoginScreen() {
           >
             <Text style={[styles.actionButtonText, { color: actionButtonTextColor }]}>Log In</Text>
           </Pressable>
-          {/* Email Login Loading/Error */}
           {isLoggingIn && (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color={themeColors.text} />
@@ -216,7 +195,6 @@ export default function LoginScreen() {
           >
             <Text style={[styles.actionButtonText, { color: actionButtonTextColor }]}>Sign Up</Text>
           </Pressable>
-          {/* Registration Loading/Error */}
           {isRegistering && (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color={themeColors.text} />
@@ -229,11 +207,8 @@ export default function LoginScreen() {
         </View>
         // --- End Registration Form ---
       )}
-      {/* --- End Conditional Render --- */}
 
-
-      {/* --- OR Separator --- */}
-      {/* Only show OR and Google/Guest if in Login view */}
+      {/* --- OR Separator, Google Button, and Guest Button (ONLY IN LOGIN VIEW) --- */}
       {isLoginView && (
         <>
             <View style={styles.orSeparator}>
@@ -242,7 +217,6 @@ export default function LoginScreen() {
                 <View style={[styles.line, {backgroundColor: themeColors.tabIconDefault}]} />
             </View>
 
-            {/* --- Google Sign-In Button --- */}
             <Pressable
                 onPress={googleSignIn}
                 disabled={authInProgress}
@@ -267,29 +241,15 @@ export default function LoginScreen() {
                 </Text>
                 </View>
             </Pressable>
-            {/* Google Sign In Loading/Error */}
             {isSigningIn && (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="small" color={themeColors.text} />
                     <Text style={{ marginLeft: 10, color: themeColors.text }}>Signing in...</Text>
                 </View>
             )}
-            {signInError && ( // Google specific error
+            {signInError && (
                 <Text style={styles.errorText}>Error: {signInError}</Text>
             )}
-            {/* --- End Google Sign-In Button --- */}
-
-
-            {/* --- Toggle Login/Register View --- */}
-          <Pressable onPress={toggleView} disabled={authInProgress} style={styles.toggleButton}>
-              <Text style={[styles.toggleText, { color: themeColors.tint }]}>
-                  {isLoginView ? "Don't have an account? Sign Up" : "Already have an account? Log In"}
-              </Text>
-          </Pressable>
-          {/* --- End Toggle --- */}
-
-
-            {/* Continue as Guest Button/Link */}
             <Pressable onPress={continueAsGuest} disabled={authInProgress} style={styles.guestButton}>
                 <Text style={[styles.guestText, { color: themeColors.tabIconDefault }]}>
                 Continue as Guest
@@ -297,12 +257,22 @@ export default function LoginScreen() {
             </Pressable>
         </>
       )}
+      {/* --- End Conditional Block for Login View Options --- */}
 
-    </ScrollView> // Close ScrollView
+
+      {/* --- Toggle Login/Register View - ALWAYS VISIBLE --- */}
+      <Pressable onPress={toggleView} disabled={authInProgress} style={styles.toggleButton}>
+          <Text style={[styles.toggleText, { color: themeColors.tint }]}>
+              {isLoginView ? "Don't have an account? Sign Up" : "Already have an account? Log In"}
+          </Text>
+      </Pressable>
+      {/* --- End Toggle --- */}
+
+    </ScrollView>
   );
 }
 
-// Updated Styles
+// Styles (Keep your existing styles from the previous version)
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
@@ -342,36 +312,34 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10, // Added margin top
+    marginTop: 10,
   },
   actionButtonText: {
-    // Color is now applied dynamically
     fontSize: 16,
     fontWeight: 'bold',
   },
   forgotPasswordButton: {
-      alignSelf: 'flex-end', // Align to the right
-      marginBottom: 15, // Space below link, before button
-      paddingVertical: 5, // Make touch target slightly larger
+      alignSelf: 'flex-end',
+      marginBottom: 15,
+      paddingVertical: 5,
   },
   forgotPasswordText: {
       fontSize: 14,
-      // textDecorationLine: 'underline', // Optional underline
   },
-  feedbackContainer: { // Container for reset feedback
+  feedbackContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       marginTop: 5,
       marginBottom: 10,
-      height: 20, // Reserve space
+      height: 20,
       width: '100%',
       justifyContent: 'center',
   },
-  feedbackText: { // Base style for feedback text
+  feedbackText: {
       fontSize: 14,
       textAlign: 'center',
   },
-  successText: { // Style for success message
+  successText: {
       color: 'green',
   },
   orSeparator: {
@@ -389,7 +357,7 @@ const styles = StyleSheet.create({
       fontWeight: '600',
   },
   googleButton: {
-    paddingVertical: 15,
+    paddingVertical: 15, // Matched actionButton padding
     paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: 'center',
@@ -423,7 +391,7 @@ const styles = StyleSheet.create({
       marginTop: 10,
       height: 20,
   },
-  errorText: { // Style for error messages (keep red)
+  errorText: {
     color: 'red',
     marginTop: 10,
     textAlign: 'center',
@@ -438,7 +406,7 @@ const styles = StyleSheet.create({
       fontWeight: '500',
   },
   guestButton: {
-      marginTop: 20,
+      marginTop: 20, // Space below Google button before this
   },
   guestText: {
     fontSize: 15,
