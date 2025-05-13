@@ -1,6 +1,5 @@
 # Environment variables
 # lock files
-pnpm-lock.yaml
 
 # Node modules - Ignore in root and all packages
 node_modules/
