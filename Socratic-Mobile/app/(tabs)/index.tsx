@@ -1,5 +1,5 @@
 // app/(tabs)/index.tsx - Using Gifted Chat & Header
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, View, Platform, Alert, Text, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import {
   GiftedChat,
@@ -20,7 +20,7 @@ import { Colors } from '@/src/constants/Colors';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import ChatHeader from '@/src/components/ChatHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ApiHistoryMessage, DialogueResponse, PersonaId } from '@socratic/common-types';
+import { ApiHistoryMessage, DialogueResponse, PersonaId, DialoguePayload } from '@socratic/common-types';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {Ionicons} from "@expo/vector-icons";
 import { personas, getDefaultPersona, PersonaUI } from '@/src/personas';
@@ -121,20 +121,32 @@ export default function ChatScreen() {
 
   const onSend = useCallback(async (newMessages: IMessage[] = []) => {
     if (!user && !isGuest) {
-        Alert.alert("Login Required", "Please log in or continue as guest to use the chat.");
-        return;
+      Alert.alert("Login Required", "Please log in or continue as guest to use the chat.");
+      return;
     }
-     if (isLoading) return;
-
-    let currentUIMessages: IMessage[] = [];
-    setMessages((previousMessages) => {
-        const processedNewMessages = newMessages.map(m => ({...m, text: String(m.text || '')}));
-        currentUIMessages = GiftedChat.append(previousMessages, processedNewMessages);
-        return currentUIMessages;
-    });
+    if (isLoading) return;
 
     setIsLoading(true);
-    const apiHistory = mapToApiHistory(currentUIMessages);
+
+    let historyToSend: IMessage[] = [];
+    if (newMessages.length > 0) {
+      // Called from GiftedChat: append new messages to current state
+      const updatedMessages = GiftedChat.append(messages, newMessages);
+      setMessages(updatedMessages);
+      historyToSend = updatedMessages;
+      console.log('[DEBUG] onSend called with newMessages. updatedMessages:', updatedMessages);
+    } else {
+      // Called for initial suggestion: use current messages state
+      historyToSend = messages;
+      console.log('[DEBUG] onSend called with no newMessages. using messages:', messages);
+    }
+
+    const apiHistory = mapToApiHistory(historyToSend);
+    console.log('[DEBUG] Actually sending apiHistory to backend:', apiHistory);
+    const payload: DialoguePayload = { history: apiHistory };
+    if (activeConversationId !== undefined) payload.conversation_id = activeConversationId;
+    if (currentPersona.id !== undefined) payload.persona_id = currentPersona.id as PersonaId;
+    console.log('[DEBUG] POST /api/dialogue payload:', JSON.stringify(payload));
 
     try {
       const dialogueApiResponse = await apiClientInstance.postDialogue(apiHistory, activeConversationId, currentPersona.id as PersonaId);
@@ -142,7 +154,7 @@ export default function ChatScreen() {
         const responseText = dialogueApiResponse.response;
         const returnedConversationId = dialogueApiResponse.conversation_id;
         if (returnedConversationId && (!activeConversationId || activeConversationId !== returnedConversationId) ) {
-            setActiveConversationId(returnedConversationId);
+          setActiveConversationId(returnedConversationId);
         }
         const aiResponse: IMessage = {
           _id: `assistant-${Date.now()}`,
@@ -161,18 +173,56 @@ export default function ChatScreen() {
     }
   }, [user, isLoading, isGuest, activeConversationId, messages, currentPersona]);
 
+  const initialSuggestionSentRef = useRef(false);
+
   useEffect(() => {
-    if (initialUserMessage && messages.length === 1 && messages[0].user._id === 2) {
-      const firstUserMsg: IMessage = {
-        _id: `user-initial-${Date.now()}`,
-        text: initialUserMessage,
-        createdAt: new Date(),
-        user: USER,
-      };
-      onSend([firstUserMsg]);
-      setInitialUserMessage(undefined);
+    if (initialUserMessage) {
+      console.log('[DEBUG] initialUserMessage effect triggered. messages:', messages, 'initialUserMessage:', initialUserMessage);
+      // If the only message is the assistant greeting, append the user message
+      if (messages.length === 1 && messages[0].user._id === 2) {
+        const firstUserMsg: IMessage = {
+          _id: `user-initial-${Date.now()}`,
+          text: initialUserMessage,
+          createdAt: new Date(),
+          user: USER,
+        };
+        console.log('[DEBUG] Appending first user message to messages:', firstUserMsg);
+        setMessages(prev => [...prev, firstUserMsg]);
+        setInitialUserMessage(undefined);
+        initialSuggestionSentRef.current = false; // Reset for new suggestion
+      } else if (messages.length === 0) {
+        const greetingMsg = {
+          _id: `assistant-greeting-${Date.now()}`,
+          text: currentPersona.initialGreeting,
+          createdAt: new Date(),
+          user: { _id: 2, name: currentPersona.name, avatar: currentPersona.image },
+        };
+        console.log('[DEBUG] Initializing messages with greeting:', greetingMsg);
+        setMessages([greetingMsg]);
+        // The next render will trigger the above case
+        initialSuggestionSentRef.current = false; // Reset for new suggestion
+      }
     }
-  }, [initialUserMessage, messages, onSend]);
+  }, [initialUserMessage, messages, onSend, currentPersona]);
+
+  // New effect: when both greeting and user message are present, send the full history (only once)
+  useEffect(() => {
+    if (
+      messages.length >= 2 &&
+      messages[messages.length - 1].user._id === USER._id &&
+      messages[messages.length - 2].user._id === 2 &&
+      !initialSuggestionSentRef.current
+    ) {
+      console.log('[DEBUG] Detected greeting + user message, calling onSend([]) ONCE');
+      initialSuggestionSentRef.current = true;
+      onSend([]);
+    }
+  }, [messages, onSend]);
+
+  // Reset the ref when persona or conversation changes
+  useEffect(() => {
+    initialSuggestionSentRef.current = false;
+  }, [currentPersona, activeConversationId]);
 
   const mapToApiHistory = (msgs: IMessage[]): ApiHistoryMessage[] => {
       return msgs

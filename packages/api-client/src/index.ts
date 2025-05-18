@@ -78,6 +78,7 @@ export class ApiClient {
         if (personaId !== undefined) {
             payload.persona_id = personaId;
         }
+        console.log('[DEBUG] POST /api/dialogue payload:', JSON.stringify(payload));
         try {
             const response = await this.axiosInstance.post<DialogueResponse>('/api/dialogue', payload);
             return response.data ?? null;
