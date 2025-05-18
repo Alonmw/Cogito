@@ -15,6 +15,7 @@ export interface ApiHistoryMessage {
 export interface DialoguePayload {
     history: ApiHistoryMessage[];
     conversation_id?: number; // <-- CRUCIAL: Ensure this line exists and is optional
+    persona_id?: PersonaId;
 }
 
 /**
@@ -23,6 +24,7 @@ export interface DialoguePayload {
 export interface DialogueResponse {
     response: string;
     conversation_id: number; // Backend should return the ID of the active/new conversation
+    persona_id?: PersonaId;
 }
 
 /**
@@ -39,6 +41,7 @@ export interface ConversationSummary {
     id: number;
     title: string;
     updated_at: string;
+    persona_id: PersonaId;
 }
 
 /**
@@ -53,4 +56,7 @@ export interface HistoryListResponse {
  */
 export interface ConversationMessagesResponse {
     messages: ApiHistoryMessage[];
+    persona_id: PersonaId;
 }
+
+export type PersonaId = "socrates" | "nietzsche" | "kant";

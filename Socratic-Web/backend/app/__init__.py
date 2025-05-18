@@ -97,21 +97,18 @@ def create_app(config_class=Config):
     else:
         print("ERROR: OPENAI_API_KEY not configured.")
 
-    # Load System Prompt
-    app.system_prompt = "Default prompt if file fails."
-    try:
-        # Prefer PROMPT_FILE_PATH from config, then env, then default file
-        prompt_file_path = app.config.get('PROMPT_FILE_PATH') or os.getenv('PROMPT_FILE_PATH') or 'socrates_prompt.txt'
-        # Ensure path is absolute if it's just a filename (relative to backend root)
-        if not os.path.isabs(prompt_file_path) and not prompt_file_path.startswith('/app'):  # /app is Render's root
-            prompt_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                            prompt_file_path)  # app dir -> backend dir -> socrates_prompt.txt
-
-        with open(prompt_file_path, 'r') as f:
-            app.system_prompt = f.read()
-        print(f"System prompt loaded successfully from {prompt_file_path}.")
-    except Exception as e:
-        print(f"Error reading system prompt file from {prompt_file_path}: {e}")
+    # --- Persona Prompts Loading ---
+    app.persona_prompts_content = {}
+    for persona_id, path in app.config['PERSONA_PROMPTS_PATHS'].items():
+        try:
+            with open(path, 'r') as f:
+                app.persona_prompts_content[persona_id] = f.read()
+            app.logger.info(f"System prompt for persona '{persona_id}' loaded successfully from {path}.")
+        except Exception as e:
+            app.logger.error(f"Error reading system prompt file for persona '{persona_id}' from {path}: {e}")
+    app.DEFAULT_PERSONA_ID = app.config['DEFAULT_PERSONA_ID']
+    # For backward compatibility, set app.system_prompt to the default persona's prompt
+    app.system_prompt = app.persona_prompts_content.get(app.DEFAULT_PERSONA_ID, "Default fallback prompt if socrates.txt is missing.")
 
     from .auth.routes import auth_bp
     from .dialogue.routes import dialogue_bp

@@ -87,7 +87,17 @@ def handle_dialogue():
 
         conversation_history = data.get('history')
         incoming_conversation_id = data.get('conversation_id')
-        current_app.logger.info(f"POST /dialogue - Incoming conversation_id from payload: {incoming_conversation_id}")
+        # --- Persona support ---
+        incoming_persona_id = data.get('persona_id', current_app.DEFAULT_PERSONA_ID)
+        system_prompt_content = current_app.persona_prompts_content.get(
+            incoming_persona_id,
+            current_app.persona_prompts_content.get(current_app.DEFAULT_PERSONA_ID)
+        )
+        if not system_prompt_content:
+            current_app.logger.error(f"System prompt for persona '{incoming_persona_id}' or default not found.")
+            return jsonify({"error": "Internal server error: Persona configuration issue."}), 500
+        # --- End persona support ---
+        current_app.logger.info(f"POST /dialogue - Incoming conversation_id from payload: {incoming_conversation_id}, persona_id: {incoming_persona_id}")
 
         if not conversation_history or not isinstance(conversation_history, list):
             current_app.logger.warning(
@@ -103,7 +113,7 @@ def handle_dialogue():
         else:
             conversation_history_for_openai = conversation_history
 
-        messages_for_openai = [{"role": "system", "content": system_prompt}]
+        messages_for_openai = [{"role": "system", "content": system_prompt_content}]
         messages_for_openai.extend(conversation_history_for_openai)
 
         try:
@@ -144,7 +154,7 @@ def handle_dialogue():
 
                 if not active_conversation:
                     current_app.logger.info(f"POST /dialogue - Creating new conversation for user {db_user.id}")
-                    active_conversation = Conversation(user_id=db_user.id, title=latest_user_message_content[:80])
+                    active_conversation = Conversation(user_id=db_user.id, title=latest_user_message_content[:80], persona_id=incoming_persona_id)
                     db.session.add(active_conversation)
                     db.session.flush()
 
@@ -166,6 +176,7 @@ def handle_dialogue():
         response_payload = {"response": ai_response_content}
         if active_conversation:
             response_payload["conversation_id"] = active_conversation.id
+            response_payload["persona_id"] = active_conversation.persona_id
 
         return jsonify(response_payload)
 
@@ -201,7 +212,7 @@ def get_history_list():
     ).all()
     history_list = [
         {"id": conv.id, "title": conv.title or f"Conversation from {conv.created_at.strftime('%Y-%m-%d %H:%M')}",
-         "updated_at": conv.updated_at.isoformat()}
+         "updated_at": conv.updated_at.isoformat(), "persona_id": conv.persona_id}
         for conv in conversations
     ]
     current_app.logger.info(
@@ -250,7 +261,7 @@ def get_conversation_messages(conversation_id: int):
     ]
     current_app.logger.info(
         f"GET /history/{conversation_id} - Returning {len(message_list)} messages for user UID: {firebase_uid}")
-    return jsonify({"messages": message_list})
+    return jsonify({"messages": message_list, "persona_id": conversation.persona_id})
 
 
 # --- End Get Specific Conversation ---

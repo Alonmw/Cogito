@@ -29,3 +29,10 @@ class Config:
     MAX_HISTORY_MSGS = 20
     PROMPT_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'socrates_prompt.txt')
 
+    PERSONA_PROMPTS_PATHS = {
+        "socrates": os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'socrates_prompt.txt'),
+        "nietzsche": os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'nietzsche_prompt.txt'),
+        "kant": os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'kant_prompt.txt'),
+    }
+    DEFAULT_PERSONA_ID = "socrates"
+
