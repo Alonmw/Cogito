@@ -7,7 +7,8 @@ import {
   ApiErrorResponse,
   ConversationSummary,
   HistoryListResponse,
-  ConversationMessagesResponse
+  ConversationMessagesResponse,
+  PersonaId
 } from '@socratic/common-types';
 
 export type GetIdTokenFunction = () => Promise<string | null>;
@@ -67,11 +68,15 @@ export class ApiClient {
 
     public async postDialogue(
         history: ApiHistoryMessage[],
-        conversationId?: number
+        conversationId?: number,
+        personaId?: PersonaId
     ): Promise<DialogueResponse | null> {
         const payload: DialoguePayload = { history };
         if (conversationId !== undefined) {
             payload.conversation_id = conversationId;
+        }
+        if (personaId !== undefined) {
+            payload.persona_id = personaId;
         }
         try {
             const response = await this.axiosInstance.post<DialogueResponse>('/api/dialogue', payload);

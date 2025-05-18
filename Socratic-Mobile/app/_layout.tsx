@@ -48,15 +48,18 @@ function MainLayout() {
 
     const inAppGroup = segments.length > 0 && segments[0] === '(tabs)';
     const onLoginScreen = segments.length > 0 && segments[0] === 'login';
+    const onPersonaSelectionScreen = segments.length > 0 && segments[0] === 'persona-selection';
 
-    // --- Updated Routing Logic ---
+    // --- Updated Routing Logic for Persona Selection ---
     const canAccessApp = user || isGuest; // User can access main app if logged in OR is guest
 
-    if (canAccessApp && !inAppGroup) {
-      // User/Guest should be in the main app area, redirect to tabs/home
-      console.log('[ROUTER] User/Guest authenticated/active, redirecting to (tabs)');
-      router.replace('/(tabs)');
-    } else if (!canAccessApp && !onLoginScreen) {
+    if (canAccessApp) {
+      if (!inAppGroup && !onPersonaSelectionScreen) {
+        // If authenticated/guest but not in tabs or persona selection, go to persona selection
+        console.log('[ROUTER] User/Guest authenticated, navigating to persona-selection');
+        router.replace('/persona-selection');
+      }
+    } else if (!onLoginScreen) {
       // User is not logged in AND not a guest, and not on the login screen -> redirect to login
       console.log('[ROUTER] User signed out/not guest, redirecting to /login');
       router.replace('/login');
@@ -79,6 +82,7 @@ function MainLayout() {
         {/* Define all possible screens/layouts */}
         <Stack.Screen name="login" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="persona-selection" />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />

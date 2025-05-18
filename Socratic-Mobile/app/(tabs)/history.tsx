@@ -9,6 +9,7 @@ import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { personas, PersonaUI } from '@/src/personas';
 
 export default function HistoryScreen() {
   const { user, isGuest, exitGuestMode } = useAuth();
@@ -81,12 +82,12 @@ export default function HistoryScreen() {
     setRefreshing(true); // This will cause fetchHistory to re-run
   }, []);
 
-  const handlePressConversation = (conversationId: number, title: string) => {
+  const handlePressConversation = (conversationId: number, title: string, personaId: string) => {
     if (isEditMode) return;
     console.log(`[HistoryScreen] Navigating to conversation ID: ${conversationId}`);
     router.push({
       pathname: '/(tabs)',
-      params: { conversationId: conversationId.toString(), conversationTitle: title },
+      params: { conversationId: conversationId.toString(), conversationTitle: title, personaId },
     });
   };
 
@@ -134,35 +135,38 @@ export default function HistoryScreen() {
     );
   }, [history]);
 
-  const renderHistoryItem = ({ item }: { item: ConversationSummary }) => (
-    <Pressable
-      style={({ pressed }) => [
-        styles.itemContainer,
-        {
-          backgroundColor: colorScheme === 'light' ? '#FFFFFF' : themeColors.background,
-          borderColor: themeColors.tabIconDefault,
-        },
-        pressed && !isEditMode && { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : '#333333' }
-      ]}
-      onPress={() => handlePressConversation(item.id, item.title)}
-    >
-      <View style={styles.itemTextContainer}>
-        <Text style={[styles.itemTitle, { color: themeColors.text }]} numberOfLines={2} ellipsizeMode="tail">
-          {item.title || "Untitled Conversation"}
-        </Text>
-        <Text style={[styles.itemDate, { color: themeColors.tabIconDefault }]}>
-          Last updated: {new Date(item.updated_at).toLocaleDateString()} {new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
-      </View>
-      {isEditMode ? (
-        <Pressable onPress={() => handleDeleteConversation(item.id)} style={styles.deleteButton}>
-          <Ionicons name="trash-bin-outline" size={24} color={Colors.light.tint} />
-        </Pressable>
-      ) : (
-        <Ionicons name="chevron-forward-outline" size={22} color={themeColors.tabIconDefault} />
-      )}
-    </Pressable>
-  );
+  const renderHistoryItem = ({ item }: { item: ConversationSummary }) => {
+    const personaDetail = personas.find(p => p.id === item.persona_id);
+    const personaDisplayName = personaDetail?.name || item.persona_id;
+    return (
+      <Pressable
+        style={({ pressed }) => [
+          styles.itemContainer,
+          {
+            backgroundColor: colorScheme === 'light' ? '#FFFFFF' : themeColors.background,
+            borderColor: themeColors.tabIconDefault,
+          },
+          pressed && !isEditMode && { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : '#333333' }
+        ]}
+        onPress={() => handlePressConversation(item.id, item.title, item.persona_id)}
+      >
+        <View style={styles.itemTextContainer}>
+          <Text style={[styles.itemTitle, { color: themeColors.text }]} numberOfLines={2} ellipsizeMode="tail">
+            {item.title || "Untitled Conversation"}
+          </Text>
+          <Text style={[styles.itemPersona, { color: themeColors.tabIconDefault, fontStyle: 'italic' }]}>Chat with: {personaDisplayName}</Text>
+          <Text style={[styles.itemDate, { color: themeColors.tabIconDefault }]}>Last updated: {new Date(item.updated_at).toLocaleDateString()} {new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+        </View>
+        {isEditMode ? (
+          <Pressable onPress={() => handleDeleteConversation(item.id)} style={styles.deleteButton}>
+            <Ionicons name="trash-bin-outline" size={24} color={Colors.light.tint} />
+          </Pressable>
+        ) : (
+          <Ionicons name="chevron-forward-outline" size={22} color={themeColors.tabIconDefault} />
+        )}
+      </Pressable>
+    );
+  };
 
 
   if (isLoading && history.length === 0 && !refreshing && !error) {
@@ -279,6 +283,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 5,
+  },
+  itemPersona: {
+    fontSize: 12,
+    marginTop: 3,
   },
   itemDate: {
     fontSize: 13,

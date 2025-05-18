@@ -20,9 +20,10 @@ import { Colors } from '@/src/constants/Colors';
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 import ChatHeader from '@/src/components/ChatHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ApiHistoryMessage, DialogueResponse } from '@socratic/common-types';
+import { ApiHistoryMessage, DialogueResponse, PersonaId } from '@socratic/common-types';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {Ionicons} from "@expo/vector-icons";
+import { personas, getDefaultPersona, PersonaUI } from '@/src/personas';
 
 // Define user objects for Gifted Chat
 const USER: User = { _id: 1, name: 'User' };
@@ -37,9 +38,11 @@ export default function ChatScreen() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const router = useRouter();
 
-  const params = useLocalSearchParams<{ conversationId?: string; conversationTitle?: string }>();
+  const params = useLocalSearchParams<{ conversationId?: string; conversationTitle?: string; personaId?: string; initialUserMessage?: string }>();
   const conversationIdParam = params.conversationId ? parseInt(params.conversationId, 10) : undefined;
   const [activeConversationId, setActiveConversationId] = useState<number | undefined>(conversationIdParam);
+  const [currentPersona, setCurrentPersona] = useState<PersonaUI>(getDefaultPersona());
+  const [initialUserMessage, setInitialUserMessage] = useState<string | undefined>(undefined);
 
   const initialGreetingMessage: IMessage = {
     _id: `assistant-greeting-${Date.now()}`,
@@ -84,14 +87,37 @@ export default function ChatScreen() {
     loadConversation();
   }, [conversationIdParam]);
 
-  const mapToApiHistory = (msgs: IMessage[]): ApiHistoryMessage[] => {
-      return msgs
-          .map(msg => ({
-              role: (msg.user._id === USER._id ? 'user' : 'assistant') as 'user' | 'assistant',
-              content: String(msg.text || ''), // Ensure content is string
-          }))
-          .reverse();
-  };
+  useEffect(() => {
+    const newPersonaId = params.personaId;
+    const newInitialUserMessage = params.initialUserMessage;
+    if (newPersonaId) {
+      const foundPersona = personas.find(p => p.id === newPersonaId) || getDefaultPersona();
+      setCurrentPersona(foundPersona);
+      if (!params.conversationId) {
+        setMessages([{
+          _id: `assistant-greeting-${Date.now()}`,
+          text: foundPersona.initialGreeting,
+          createdAt: new Date(),
+          user: { _id: 2, name: foundPersona.name, avatar: foundPersona.image },
+        }]);
+      }
+    } else if (!params.conversationId) {
+      const defaultP = getDefaultPersona();
+      setCurrentPersona(defaultP);
+      setMessages([{
+        _id: `assistant-greeting-${Date.now()}`,
+        text: defaultP.initialGreeting,
+        createdAt: new Date(),
+        user: { _id: 2, name: defaultP.name, avatar: defaultP.image },
+      }]);
+    }
+    if (newInitialUserMessage && !params.conversationId) {
+      setInitialUserMessage(newInitialUserMessage);
+    } else {
+      setInitialUserMessage(undefined);
+    }
+    setActiveConversationId(params.conversationId ? parseInt(params.conversationId, 10) : undefined);
+  }, [params.personaId, params.conversationId, params.initialUserMessage]);
 
   const onSend = useCallback(async (newMessages: IMessage[] = []) => {
     if (!user && !isGuest) {
@@ -102,7 +128,7 @@ export default function ChatScreen() {
 
     let currentUIMessages: IMessage[] = [];
     setMessages((previousMessages) => {
-        const processedNewMessages = newMessages.map(m => ({...m, text: String(m.text || '')})); // Ensure text is string
+        const processedNewMessages = newMessages.map(m => ({...m, text: String(m.text || '')}));
         currentUIMessages = GiftedChat.append(previousMessages, processedNewMessages);
         return currentUIMessages;
     });
@@ -111,7 +137,7 @@ export default function ChatScreen() {
     const apiHistory = mapToApiHistory(currentUIMessages);
 
     try {
-      const dialogueApiResponse = await apiClientInstance.postDialogue(apiHistory, activeConversationId);
+      const dialogueApiResponse = await apiClientInstance.postDialogue(apiHistory, activeConversationId, currentPersona.id as PersonaId);
       if (dialogueApiResponse && dialogueApiResponse.response) {
         const responseText = dialogueApiResponse.response;
         const returnedConversationId = dialogueApiResponse.conversation_id;
@@ -120,9 +146,9 @@ export default function ChatScreen() {
         }
         const aiResponse: IMessage = {
           _id: `assistant-${Date.now()}`,
-          text: String(responseText || ''), // Ensure text is string
+          text: String(responseText || ''),
           createdAt: new Date(),
-          user: ASSISTANT,
+          user: ASSISTANT_CHAT_USER,
         };
         setMessages((previousMessages) => GiftedChat.append(previousMessages, [aiResponse]));
       } else {
@@ -133,13 +159,49 @@ export default function ChatScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isLoading, isGuest, activeConversationId, messages]);
+  }, [user, isLoading, isGuest, activeConversationId, messages, currentPersona]);
+
+  useEffect(() => {
+    if (initialUserMessage && messages.length === 1 && messages[0].user._id === 2) {
+      const firstUserMsg: IMessage = {
+        _id: `user-initial-${Date.now()}`,
+        text: initialUserMessage,
+        createdAt: new Date(),
+        user: USER,
+      };
+      onSend([firstUserMsg]);
+      setInitialUserMessage(undefined);
+    }
+  }, [initialUserMessage, messages, onSend]);
+
+  const mapToApiHistory = (msgs: IMessage[]): ApiHistoryMessage[] => {
+      return msgs
+          .map(msg => ({
+              role: (msg.user._id === USER._id ? 'user' : 'assistant') as 'user' | 'assistant',
+              content: String(msg.text || ''), // Ensure content is string
+          }))
+          .reverse();
+  };
+
+  const ASSISTANT_CHAT_USER: User = {
+    _id: 2,
+    name: currentPersona.name,
+    avatar: currentPersona.image,
+  };
 
   const handleClearChat = useCallback(() => {
       setMessages([initialGreetingMessage]);
       setActiveConversationId(undefined);
       router.setParams({ conversationId: undefined, conversationTitle: undefined });
   }, [initialGreetingMessage, router]);
+
+  const handleNewChatPress = useCallback(() => {
+    setMessages([]);
+    setActiveConversationId(undefined);
+    setCurrentPersona(getDefaultPersona());
+    router.setParams({ conversationId: undefined, conversationTitle: undefined, personaId: undefined, initialUserMessage: undefined });
+    router.push('/persona-selection');
+  }, [router]);
 
   // --- Minimal Bubble Renderer ---
   // This passes all props through to GiftedChat's default Bubble,
@@ -221,7 +283,7 @@ if (isLoadingHistory) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
-      <ChatHeader onClearChat={handleClearChat} />
+      <ChatHeader onNewChatPress={handleNewChatPress} personaName={currentPersona.name} />
         <GiftedChat
             messages={messages}
             onSend={newMessages => onSend(newMessages)}

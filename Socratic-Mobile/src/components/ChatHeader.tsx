@@ -8,10 +8,11 @@ import { Colors } from '@/src/constants/Colors'; // Adjust path if needed
 import { useColorScheme } from '@/src/hooks/useColorScheme'; // Adjust path if needed
 
 interface ChatHeaderProps {
-  onClearChat: () => void; // Function passed from parent to clear messages
+  onNewChatPress: () => void;
+  personaName?: string;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ onClearChat }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ onNewChatPress, personaName }) => {
   const { user, signOut } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const themeColors = Colors[colorScheme];
@@ -20,9 +21,9 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onClearChat }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background, borderBottomColor: themeColors.tabIconDefault }]}>
-      <Text style={[styles.title, { color: themeColors.text }]}>Socratic Questioner</Text>
+      <Text style={[styles.title, { color: themeColors.text }]}>{personaName || 'Socratic Partner'}</Text>
       <View style={styles.buttonContainer}>
-        <Pressable onPress={onClearChat} style={[styles.button, { borderColor: themeColors.tint }]}>
+        <Pressable onPress={onNewChatPress} style={[styles.button, { borderColor: themeColors.tint }]}>
            <Text style={[styles.buttonText, { color: themeColors.tint }]}>New Chat</Text>
         </Pressable>
         {user ? (
