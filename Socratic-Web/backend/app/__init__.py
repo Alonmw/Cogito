@@ -101,11 +101,11 @@ def create_app(config_class=Config):
     app.system_prompt = "Default prompt if file fails."
     try:
         # Prefer PROMPT_FILE_PATH from config, then env, then default file
-        prompt_file_path = app.config.get('PROMPT_FILE_PATH') or os.getenv('PROMPT_FILE_PATH') or 'prompt.txt'
+        prompt_file_path = app.config.get('PROMPT_FILE_PATH') or os.getenv('PROMPT_FILE_PATH') or 'socrates_prompt.txt'
         # Ensure path is absolute if it's just a filename (relative to backend root)
         if not os.path.isabs(prompt_file_path) and not prompt_file_path.startswith('/app'):  # /app is Render's root
             prompt_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                            prompt_file_path)  # app dir -> backend dir -> prompt.txt
+                                            prompt_file_path)  # app dir -> backend dir -> socrates_prompt.txt
 
         with open(prompt_file_path, 'r') as f:
             app.system_prompt = f.read()

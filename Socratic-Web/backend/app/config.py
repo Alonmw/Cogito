@@ -27,5 +27,5 @@ class Config:
 
     # --- App Specific ---
     MAX_HISTORY_MSGS = 20
-    PROMPT_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'prompt.txt')
+    PROMPT_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'socrates_prompt.txt')
 
