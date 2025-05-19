@@ -95,7 +95,10 @@ function MainLayout() {
 export default function RootLayout() {
   // Load fonts here
   const [loaded, error] = useFonts({
-    SpaceMono: require('@/src/assets/fonts/SpaceMono-Regular.ttf'), // Adjust path if needed
+    SpaceMono: require('@/src/assets/fonts/SpaceMono-Regular.ttf'),
+    'Lora-Bold': require('@/src/assets/fonts/Lora-Bold.ttf'),
+    'Lora-SemiBold': require('@/src/assets/fonts/Lora-SemiBold.ttf'),
+    'Inter-Regular': require('@/src/assets/fonts/Inter_24pt-Regular.ttf'),
   });
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.

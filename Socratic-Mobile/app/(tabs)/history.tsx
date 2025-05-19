@@ -10,6 +10,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { personas, PersonaUI } from '@/src/personas';
+import { ThemedCard } from '@/src/components/ThemedCard';
+import { ThemedView } from '@/src/components/ThemedView';
+import { ThemedText } from '@/src/components/ThemedText';
+import { ThemedButton } from '@/src/components/ThemedButton';
+import { spacing, shadows } from '@/src/constants/spacingAndShadows';
 
 export default function HistoryScreen() {
   const { user, isGuest, exitGuestMode } = useAuth();
@@ -140,26 +145,27 @@ export default function HistoryScreen() {
     const personaDisplayName = personaDetail?.name || item.persona_id;
     return (
       <Pressable
-        style={({ pressed }) => [
-          styles.itemContainer,
-          {
-            backgroundColor: colorScheme === 'light' ? '#FFFFFF' : themeColors.background,
-            borderColor: themeColors.tabIconDefault,
-          },
-          pressed && !isEditMode && { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : '#333333' }
-        ]}
         onPress={() => handlePressConversation(item.id, item.title, item.persona_id)}
+        onLongPress={toggleEditMode}
+        accessibilityLabel={`Conversation: ${item.title || 'Untitled Conversation'}`}
+        style={({ pressed }) => [
+          {
+            marginVertical: spacing.s / 2,
+            backgroundColor: pressed && !isEditMode ? '#e7dbc2' : '#F5E9D7',
+            borderRadius: 12,
+            ...shadows.low,
+            padding: spacing.m,
+            flexDirection: 'row',
+            alignItems: 'center',
+          },
+        ]}
       >
-        <View style={styles.itemTextContainer}>
-          <Text style={[styles.itemTitle, { color: themeColors.text }]} numberOfLines={2} ellipsizeMode="tail">
-            {item.title || "Untitled Conversation"}
-          </Text>
-          <Text style={[styles.itemPersona, { color: themeColors.tabIconDefault, fontStyle: 'italic' }]}>Chat with: {personaDisplayName}</Text>
-          <Text style={[styles.itemDate, { color: themeColors.tabIconDefault }]}>Last updated: {new Date(item.updated_at).toLocaleDateString()} {new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-        </View>
+        <ThemedText type="defaultSemiBold" style={{ marginBottom: 2, flex: 1 }}>{item.title || "Untitled Conversation"}</ThemedText>
+        <ThemedText style={{ color: themeColors.tabIconDefault, fontStyle: 'italic', fontSize: 13, flex: 1 }}>Chat with: {personaDisplayName}</ThemedText>
+        <ThemedText style={{ color: themeColors.tabIconDefault, fontSize: 12, marginTop: 2, flex: 1 }}>Last updated: {new Date(item.updated_at).toLocaleDateString()} {new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</ThemedText>
         {isEditMode ? (
-          <Pressable onPress={() => handleDeleteConversation(item.id)} style={styles.deleteButton}>
-            <Ionicons name="trash-bin-outline" size={24} color={Colors.light.tint} />
+          <Pressable onPress={() => handleDeleteConversation(item.id)} style={{ padding: 8, marginLeft: 10 }} accessibilityLabel="Delete conversation">
+            <Ionicons name="trash-bin-outline" size={24} color={themeColors.tint} />
           </Pressable>
         ) : (
           <Ionicons name="chevron-forward-outline" size={22} color={themeColors.tabIconDefault} />
@@ -168,47 +174,51 @@ export default function HistoryScreen() {
     );
   };
 
-
   if (isLoading && history.length === 0 && !refreshing && !error) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background, justifyContent: 'center', alignItems: 'center' }]}>
+      <ThemedView style={[styles.container, { backgroundColor: themeColors.background, justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={themeColors.tint} />
-        <Text style={{ color: themeColors.text, marginTop: 10 }}>Loading history...</Text>
-      </SafeAreaView>
+        <ThemedText style={{ color: themeColors.text, marginTop: spacing.m }}>Loading history...</ThemedText>
+      </ThemedView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
-      <View style={styles.headerContainer}>
-        <View style={styles.headerSidePlaceholder} />
-        <Text style={[styles.title, { color: themeColors.text }]}>Conversation History</Text>
+    <ThemedView style={[styles.container, { backgroundColor: '#FAF3E0' }]}>
+      <ThemedView style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: spacing.m,
+        paddingTop: Platform.OS === 'android' ? 25 : 15,
+        paddingBottom: 15,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: themeColors.tabIconDefault,
+      }}>
+        <ThemedView style={{ width: 60 }} />
+        <ThemedText type="title" style={{ fontSize: 20, textAlign: 'center' }}>Conversation History</ThemedText>
         {(history.length > 0 || isEditMode) && user && !isGuest ? (
-            <Pressable onPress={toggleEditMode} style={styles.editButton}>
-                <Text style={[styles.editButtonText, { color: themeColors.tint }]}>
-                    {isEditMode ? "Done" : "Edit"}
-                </Text>
-            </Pressable>
+          <Pressable onPress={toggleEditMode} style={{ paddingVertical: 5, paddingHorizontal: 10, minWidth: 60, alignItems: 'flex-end' }}>
+            <ThemedText style={{ color: themeColors.tint, fontWeight: '500', fontSize: 16 }}>{isEditMode ? "Done" : "Edit"}</ThemedText>
+          </Pressable>
         ) : (
-            <View style={styles.headerSidePlaceholder} />
+          <ThemedView style={{ width: 60 }} />
         )}
-      </View>
+      </ThemedView>
 
       {error && !isLoading ? (
-        <View style={styles.centeredMessageContainer}>
-          <Text style={[styles.errorText, { color: themeColors.text, opacity: 0.7 }]}>{error}</Text>
+        <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <ThemedText style={{ color: themeColors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>{error}</ThemedText>
           {(!user || isGuest) ? (
-             <Pressable onPress={handleGuestGoToLogin} style={[styles.loginButton, {borderColor: themeColors.tint}]}>
-                <Text style={[styles.loginButtonText, {color: themeColors.tint}]}>Go to Login</Text>
-             </Pressable>
+            <ThemedButton title="Go to Login" onPress={handleGuestGoToLogin} variant="outline" style={{ marginTop: 20 }} />
           ) : null}
-        </View>
+        </ThemedView>
       ) : null}
 
       {!error && history.length === 0 && !isLoading ? (
-         <View style={styles.centeredMessageContainer}>
-            <Text style={[styles.emptyText, { color: themeColors.text, opacity: 0.7 }]}>No conversation history found.</Text>
-         </View>
+         <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <ThemedText style={{ color: themeColors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>No conversation history found.</ThemedText>
+         </ThemedView>
       ) : null}
 
       {history.length > 0 ? (
@@ -217,12 +227,12 @@ export default function HistoryScreen() {
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderHistoryItem}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.tint} colors={[themeColors.tint]} progressBackgroundColor={themeColors.background} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.tint} colors={[themeColors.tint]} progressBackgroundColor={'#FAF3E0'} />
           }
-          contentContainerStyle={styles.listContentContainer}
+          contentContainerStyle={{ paddingHorizontal: spacing.m, paddingVertical: spacing.s, backgroundColor: '#FAF3E0' }}
         />
       ) : null}
-    </SafeAreaView>
+    </ThemedView>
   );
 }
 

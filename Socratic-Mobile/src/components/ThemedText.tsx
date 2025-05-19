@@ -35,26 +35,33 @@ export function ThemedText({
 
 const styles = StyleSheet.create({
   default: {
+    fontFamily: 'Inter-Regular',
     fontSize: 16,
     lineHeight: 24,
+    fontWeight: '400',
   },
   defaultSemiBold: {
+    fontFamily: 'Lora-SemiBold',
     fontSize: 16,
     lineHeight: 24,
     fontWeight: '600',
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    lineHeight: 32,
+    fontFamily: 'Lora-Bold',
+    fontSize: 30,
+    fontWeight: '700',
+    lineHeight: 36,
   },
   subtitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Lora-Bold',
+    fontSize: 22,
+    fontWeight: '700',
+    lineHeight: 28,
   },
   link: {
-    lineHeight: 30,
+    fontFamily: 'Inter-Regular',
+    lineHeight: 24,
     fontSize: 16,
-    color: '#0a7ea4',
+    textDecorationLine: 'underline',
   },
 });

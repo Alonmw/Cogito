@@ -1,11 +1,14 @@
 // src/components/ChatHeader.tsx
 import React from 'react';
 // --- Removed StatusBar import ---
-import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
+import { View, StyleSheet, Platform, Pressable } from 'react-native';
 // --- End Removed Import ---
 import { useAuth } from '@/src/context/AuthContext'; // Adjust path if needed
 import { Colors } from '@/src/constants/Colors'; // Adjust path if needed
 import { useColorScheme } from '@/src/hooks/useColorScheme'; // Adjust path if needed
+import { ThemedView } from './ThemedView';
+import { ThemedText } from './ThemedText';
+import { spacing } from '@/src/constants/spacingAndShadows';
 
 interface ChatHeaderProps {
   onNewChatPress: () => void;
@@ -20,21 +23,22 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onNewChatPress, personaName }) 
   const userDisplayText = user ? (user.displayName || user.email || 'Profile') : 'Guest';
 
   return (
-    <View style={[styles.container, { backgroundColor: themeColors.background, borderBottomColor: themeColors.tabIconDefault }]}>
-      <Text style={[styles.title, { color: themeColors.text }]}>{personaName || 'Socratic Partner'}</Text>
-      <View style={styles.buttonContainer}>
+    <ThemedView style={[styles.container, { backgroundColor: themeColors.background, borderBottomColor: themeColors.tabIconDefault }]}>
+      <ThemedText type="title" style={styles.title}>{personaName || 'Socratic Partner'}</ThemedText>
+      <ThemedView style={styles.buttonContainer}>
         <Pressable onPress={onNewChatPress} style={[styles.button, { borderColor: themeColors.tint }]}>
-           <Text style={[styles.buttonText, { color: themeColors.tint }]}>New Chat</Text>
+          <ThemedText style={[styles.buttonText, { color: themeColors.tint }]}>New Chat</ThemedText>
         </Pressable>
         {user ? (
           <Pressable onPress={signOut} style={[styles.button, { borderColor: themeColors.tint }]}>
-            <Text style={[styles.buttonText, { color: themeColors.tint }]}>Logout</Text>
+            <ThemedText style={[styles.buttonText, { color: themeColors.tint }]}>Logout</ThemedText>
           </Pressable>
         ) : (
-          <Text style={[styles.guestText, { color: themeColors.text }]}>Guest Mode</Text>
+          <ThemedText style={[styles.guestText, { color: themeColors.text }]}>Guest Mode</ThemedText>
         )}
-      </View>
-    </View>
+      </ThemedView>
+      <ThemedView style={styles.divider} />
+    </ThemedView>
   );
 };
 
@@ -43,12 +47,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 15,
-    paddingVertical: 10, // Keep vertical padding
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.s,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    // --- Removed explicit paddingTop using StatusBar.currentHeight ---
-    // paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) + 10 : 10,
-    // --- End Removed Padding ---
+  },
+  divider: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#E5E5EA',
   },
   title: {
     fontSize: 18,
@@ -59,19 +68,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   button: {
-      marginLeft: 15,
-      paddingVertical: 5,
-      paddingHorizontal: 8,
-      borderWidth: 1,
-      borderRadius: 5,
+    marginLeft: spacing.s,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderRadius: 6,
   },
   buttonText: {
-      fontSize: 14,
-      fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '500',
   },
   guestText: {
     fontSize: 14,
-    marginLeft: 15,
+    marginLeft: spacing.s,
     fontStyle: 'italic',
   },
 });

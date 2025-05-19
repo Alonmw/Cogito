@@ -24,6 +24,9 @@ import { ApiHistoryMessage, DialogueResponse, PersonaId, DialoguePayload } from 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {Ionicons} from "@expo/vector-icons";
 import { personas, getDefaultPersona, PersonaUI } from '@/src/personas';
+import { ThemedView } from '@/src/components/ThemedView';
+import { ThemedText } from '@/src/components/ThemedText';
+import { spacing, shadows } from '@/src/constants/spacingAndShadows';
 
 // Define user objects for Gifted Chat
 const USER: User = { _id: 1, name: 'User' };
@@ -257,79 +260,108 @@ export default function ChatScreen() {
   // This passes all props through to GiftedChat's default Bubble,
   // only adding our desired margin.
   const renderCustomBubble = (props: BubbleProps<IMessage>) => {
+    const isUser = props.currentMessage?.user._id === USER._id;
     return (
-      <View style={{ marginBottom: 10 }}>
-        <Bubble
-          {...props}
-          // Re-apply themed wrapper and text styles if needed, but keep it minimal for now
-          wrapperStyle={{
-            left: { backgroundColor: colorScheme === 'light' ? '#E5E5EA' : '#2C2C2E' },
-            right: { backgroundColor: themeColors.tint },
+      <ThemedView
+        style={[
+          {
+            alignSelf: isUser ? 'flex-end' : 'flex-start',
+            backgroundColor: isUser ? themeColors.tint : '#EFE3C7',
+            borderRadius: 18,
+            paddingVertical: spacing.s,
+            paddingHorizontal: spacing.m,
+            marginBottom: spacing.s,
+            maxWidth: '80%',
+            ...shadows.low,
+          },
+        ]}
+        accessibilityLabel={isUser ? 'Your message' : 'Assistant message'}
+      >
+        <ThemedText
+          style={{
+            color: isUser ? '#fff' : themeColors.text,
+            fontSize: 16,
+            fontWeight: isUser ? '600' : '400',
           }}
-          textStyle={{
-            left: { color: themeColors.text },
-            right: { color: colorScheme === 'dark' ? '#000000' : '#FFFFFF' },
-          }}
-        />
-      </View>
+        >
+          {props.currentMessage?.text}
+        </ThemedText>
+      </ThemedView>
     );
   };
 
-
   const renderCustomInputToolbar = (props: InputToolbarProps<IMessage>) => (
-  <InputToolbar
-    {...props}
-    containerStyle={{
-      backgroundColor: themeColors.background,
-      borderTopColor: themeColors.tint,
-      borderTopWidth: 1,
-      padding: 5,
-    }}
-    primaryStyle={{ alignItems: 'center' }}
-  />
-);
+    <InputToolbar
+      {...props}
+      containerStyle={{
+        backgroundColor: '#F5E9D7', // Parchment-like input bar
+        padding: spacing.s,
+        flexDirection: 'row',
+        alignItems: 'center',
+        // No border, no shadow
+      }}
+    />
+  );
 
   const renderCustomComposer = (props: ComposerProps) => (
-  <Composer
-    {...props}
-    textInputStyle={{
-      color: themeColors.text,
-      backgroundColor: colorScheme === 'dark' ? '#1E1E1E' : '#F0F0F0',
-      paddingHorizontal: 12,
-      borderRadius: 20,
-    }}
-  />
-);
+    <Composer
+      {...props}
+      textInputStyle={{
+        color: themeColors.text,
+        fontSize: 16,
+        backgroundColor: '#FAF3E0', // Subtle contrast with input bar
+        borderRadius: 20,
+        paddingHorizontal: spacing.m,
+        minHeight: 40,
+        flex: 1,
+        textAlignVertical: 'center',
+        borderWidth: 0,
+        borderColor: 'transparent',
+        shadowColor: 'transparent',
+      }}
+    />
+  );
 
-const renderCustomSend = (props: SendProps<IMessage>) => (
-  <Send {...props}>
-    <View style={{ marginRight: 10, marginBottom: 5 }}>
-      <Ionicons name="send" size={24} color={themeColors.tint} />
-    </View>
-  </Send>
-);
-
+  const renderCustomSend = (props: SendProps<IMessage>) => (
+    <Send {...props}>
+      <View
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          backgroundColor: themeColors.tint,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginLeft: 8,
+          marginRight: spacing.s,
+          marginBottom: 5,
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Send message"
+      >
+        <Ionicons name="send" size={24} color="#fff" />
+      </View>
+    </Send>
+  );
 
   // --- End Minimal Bubble Renderer ---
-if (isLoadingHistory) {
-  return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        {
+  if (isLoadingHistory) {
+    return (
+      <ThemedView
+        style={{
+          flex: 1,
           backgroundColor: themeColors.background,
           justifyContent: 'center',
           alignItems: 'center',
-        },
-      ]}
-    >
-      <ActivityIndicator size="large" color={themeColors.tint} />
-      <Text style={{ color: themeColors.text, marginTop: 10 }}>
-        Loading conversation...
-      </Text>
-    </SafeAreaView>
-  );
-}
+        }}
+      >
+        <ActivityIndicator size="large" color={themeColors.tint} />
+        <ThemedText style={{ color: themeColors.text, marginTop: spacing.m, fontSize: 16 }}>
+          Loading conversation...
+        </ThemedText>
+      </ThemedView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
