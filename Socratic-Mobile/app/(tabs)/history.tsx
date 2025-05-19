@@ -1,7 +1,6 @@
 // app/(tabs)/history.tsx
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, RefreshControl, Platform, Alert, TextInput } from 'react-native';
-import { SwipeListView } from 'react-native-swipe-list-view';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, RefreshControl, Platform, Alert, TextInput, FlatList } from 'react-native';
 import { useAuth } from '@/src/context/AuthContext';
 import apiClientInstance from '@/src/services/api';
 import { ConversationSummary } from '@socratic/common-types';
@@ -17,7 +16,6 @@ import { ThemedText } from '@/src/components/ThemedText';
 import { ThemedButton } from '@/src/components/ThemedButton';
 import { spacing, shadows } from '@/src/constants/spacingAndShadows';
 import { Share } from 'react-native';
-import SwipeableScreen from '@/src/components/SwipeableScreen';
 
 export default function HistoryScreen() {
   const { user, isGuest, exitGuestMode } = useAuth();
@@ -33,6 +31,7 @@ export default function HistoryScreen() {
   const [isRenaming, setIsRenaming] = useState(false);
   const [currentRenameId, setCurrentRenameId] = useState<number | null>(null);
   const [newTitle, setNewTitle] = useState('');
+  const hasInitialized = useRef(false);
 
   const fetchHistory = useCallback(async () => {
     if (!user || isGuest) {
@@ -81,12 +80,19 @@ export default function HistoryScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      // The fetchHistory function itself now contains the isLoading guard.
-      console.log("[HistoryScreen] Focus effect triggered. Calling fetchHistory.");
-      fetchHistory();
+      if (!hasInitialized.current) {
+        fetchHistory();
+        hasInitialized.current = true;
+      }
       setIsEditMode(false); // Reset edit mode when screen comes into focus
-    }, [fetchHistory]) // fetchHistory will only change if user, isGuest, or refreshing changes
+    }, [fetchHistory])
   );
+
+  useEffect(() => {
+    if (refreshing) {
+      fetchHistory();
+    }
+  }, [refreshing, fetchHistory]);
 
   const onRefresh = useCallback(() => {
     console.log("[HistoryScreen] Refresh triggered");
@@ -262,28 +268,6 @@ export default function HistoryScreen() {
     }
   };
 
-  const renderHiddenItem = (data: { item: ConversationSummary }, rowMap: any) => (
-    <View style={styles.rowBack}>
-      <Pressable
-        style={[styles.backLeftBtn, styles.backLeftBtnLeft]}
-        onPress={() => handleDeleteConversation(data.item.id)}
-        accessibilityLabel="Delete conversation"
-      >
-        <Ionicons name="trash-outline" size={24} color="#FFFFFF" />
-        <ThemedText style={styles.backTextWhite}>Delete</ThemedText>
-      </Pressable>
-      
-      <Pressable
-        style={[styles.backRightBtn, styles.backRightBtnRight]}
-        onPress={() => handleRenameConversation(data.item.id, data.item.title)}
-        accessibilityLabel="Rename conversation"
-      >
-        <Ionicons name="create-outline" size={24} color="#FFFFFF" />
-        <ThemedText style={styles.backTextWhite}>Rename</ThemedText>
-      </Pressable>
-    </View>
-  );
-
   // Render rename modal/popup
   const renderRenameModal = () => {
     if (!isRenaming) return null;
@@ -323,71 +307,61 @@ export default function HistoryScreen() {
   }
 
   return (
-    <SwipeableScreen currentTab="history">
-      <ThemedView style={[styles.container, { backgroundColor: '#FAF3E0' }]}>
-        <ThemedView style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          paddingHorizontal: spacing.m,
-          paddingTop: Platform.OS === 'android' ? 25 : 15,
-          paddingBottom: 15,
-          borderBottomWidth: StyleSheet.hairlineWidth,
-          borderBottomColor: themeColors.tabIconDefault,
-        }}>
+    <ThemedView style={[styles.container, { backgroundColor: '#FAF3E0' }]}>
+      <ThemedView style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: spacing.m,
+        paddingTop: Platform.OS === 'android' ? 25 : 15,
+        paddingBottom: 15,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: themeColors.tabIconDefault,
+      }}>
+        <ThemedView style={{ width: 60 }} />
+        <ThemedText type="title" style={{ fontSize: 20, textAlign: 'center' }}>Conversation History</ThemedText>
+        {(history.length > 0 || isEditMode) && user && !isGuest ? (
+          <Pressable onPress={toggleEditMode} style={{ paddingVertical: 5, paddingHorizontal: 10, minWidth: 60, alignItems: 'flex-end' }}>
+            <Ionicons 
+              name={isEditMode ? "checkmark-done-outline" : "pencil-outline"} 
+              size={24} 
+              color={themeColors.tint} 
+            />
+          </Pressable>
+        ) : (
           <ThemedView style={{ width: 60 }} />
-          <ThemedText type="title" style={{ fontSize: 20, textAlign: 'center' }}>Conversation History</ThemedText>
-          {(history.length > 0 || isEditMode) && user && !isGuest ? (
-            <Pressable onPress={toggleEditMode} style={{ paddingVertical: 5, paddingHorizontal: 10, minWidth: 60, alignItems: 'flex-end' }}>
-              <Ionicons 
-                name={isEditMode ? "checkmark-done-outline" : "pencil-outline"} 
-                size={24} 
-                color={themeColors.tint} 
-              />
-            </Pressable>
-          ) : (
-            <ThemedView style={{ width: 60 }} />
-          )}
-        </ThemedView>
-
-        {error && !isLoading ? (
-          <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-            <ThemedText style={{ color: themeColors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>{error}</ThemedText>
-            {(!user || isGuest) ? (
-              <ThemedButton title="Go to Login" onPress={handleGuestGoToLogin} variant="outline" style={{ marginTop: 20 }} />
-            ) : null}
-          </ThemedView>
-        ) : null}
-
-        {!error && history.length === 0 && !isLoading ? (
-          <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-              <ThemedText style={{ color: themeColors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>No conversation history found.</ThemedText>
-          </ThemedView>
-        ) : null}
-
-        {history.length > 0 ? (
-          <SwipeListView
-            data={history}
-            renderItem={renderHistoryItem}
-            renderHiddenItem={renderHiddenItem}
-            leftOpenValue={75} // Width of the delete area when swiped left
-            rightOpenValue={-75} // Width of the rename area when swiped right
-            previewRowKey={'0'} // Optional: Animate first row on load
-            previewOpenValue={-40} // How far to open preview
-            previewOpenDelay={3000} // Preview open delay
-            disableLeftSwipe={isEditMode} // Disable left swipe in edit mode
-            disableRightSwipe={isEditMode} // Disable right swipe in edit mode
-            keyExtractor={(item) => item.id.toString()}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.tint} colors={[themeColors.tint]} progressBackgroundColor={'#FAF3E0'} />
-            }
-            contentContainerStyle={{ paddingHorizontal: spacing.m, paddingVertical: spacing.s, backgroundColor: '#FAF3E0' }}
-          />
-        ) : null}
-
-        {renderRenameModal()}
+        )}
       </ThemedView>
-    </SwipeableScreen>
+
+      {error && !isLoading ? (
+        <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <ThemedText style={{ color: themeColors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>{error}</ThemedText>
+          {(!user || isGuest) ? (
+            <ThemedButton title="Go to Login" onPress={handleGuestGoToLogin} variant="outline" style={{ marginTop: 20 }} />
+          ) : null}
+        </ThemedView>
+      ) : null}
+
+      {!error && history.length === 0 && !isLoading ? (
+        <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <ThemedText style={{ color: themeColors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>No conversation history found.</ThemedText>
+        </ThemedView>
+      ) : null}
+
+      {history.length > 0 ? (
+        <FlatList
+          data={history}
+          renderItem={renderHistoryItem}
+          keyExtractor={(item) => item.id.toString()}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.tint} colors={[themeColors.tint]} progressBackgroundColor={'#FAF3E0'} />
+          }
+          contentContainerStyle={{ paddingHorizontal: spacing.m, paddingVertical: spacing.s, backgroundColor: '#FAF3E0' }}
+        />
+      ) : null}
+
+      {renderRenameModal()}
+    </ThemedView>
   );
 }
 
@@ -404,51 +378,6 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? 25 : 15,
     paddingBottom: 15,
     borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  rowBack: {
-    alignItems: 'center',
-    backgroundColor: '#DDD',
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingLeft: 15,
-    marginVertical: spacing.s / 2,
-    borderRadius: 12,
-  },
-  backRightBtn: {
-    alignItems: 'center',
-    bottom: 0,
-    justifyContent: 'center',
-    position: 'absolute',
-    top: 0,
-    width: 75,
-    flexDirection: 'column',
-  },
-  backRightBtnRight: {
-    backgroundColor: '#0c6df2', // Blue color for rename
-    right: 0,
-    borderTopRightRadius: 12,
-    borderBottomRightRadius: 12,
-  },
-  backLeftBtn: {
-    alignItems: 'center',
-    bottom: 0,
-    justifyContent: 'center',
-    position: 'absolute',
-    top: 0,
-    width: 75,
-    flexDirection: 'column',
-  },
-  backLeftBtnLeft: {
-    backgroundColor: '#FF3B30', // Red color for delete
-    left: 0,
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
-  },
-  backTextWhite: {
-    color: '#FFF',
-    fontSize: 12,
-    marginTop: 4,
   },
   modalOverlay: {
     position: 'absolute',

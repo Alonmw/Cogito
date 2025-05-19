@@ -27,7 +27,6 @@ import { personas, getDefaultPersona, PersonaUI } from '@/src/personas';
 import { ThemedView } from '@/src/components/ThemedView';
 import { ThemedText } from '@/src/components/ThemedText';
 import { spacing, shadows } from '@/src/constants/spacingAndShadows';
-import SwipeableScreen from '@/src/components/SwipeableScreen';
 
 // Define user objects for Gifted Chat
 const USER: User = { _id: 1, name: 'User' };
@@ -390,31 +389,29 @@ export default function ChatScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
-      <SwipeableScreen currentTab="index">
-        <ChatHeader 
-          onNewChatPress={handleNewChatPress} 
-          personaName={currentPersona.name} 
-          currentMessages={messages}
-          conversationTitle={params.conversationTitle || `Chat with ${currentPersona.name}`}
-        />
-        <GiftedChat
-          messages={messages}
-          onSend={newMessages => onSend(newMessages)}
-          user={USER}
-          isTyping={isLoading}
-          alwaysShowSend
-          renderTime={() => null}
-          renderDay={() => null}
-          renderAvatar={() => null}
-          showAvatarForEveryMessage={false}
-          renderBubble={renderCustomBubble} // Using the simplified bubble
-          // Custom input renderers remain commented out
-          renderInputToolbar={renderCustomInputToolbar}
-          renderComposer={renderCustomComposer}
-          renderSend={renderCustomSend}
-        />
-      </SwipeableScreen>
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}> 
+      <ChatHeader 
+        onNewChatPress={handleNewChatPress} 
+        personaName={currentPersona.name} 
+        currentMessages={messages}
+        conversationTitle={params.conversationTitle || `Chat with ${currentPersona.name}`}
+      />
+      <GiftedChat
+        messages={messages}
+        onSend={newMessages => onSend(newMessages)}
+        user={USER}
+        isTyping={isLoading}
+        alwaysShowSend
+        renderTime={() => null}
+        renderDay={() => null}
+        renderAvatar={() => null}
+        showAvatarForEveryMessage={false}
+        renderBubble={renderCustomBubble} // Using the simplified bubble
+        // Custom input renderers remain commented out
+        renderInputToolbar={renderCustomInputToolbar}
+        renderComposer={renderCustomComposer}
+        renderSend={renderCustomSend}
+      />
     </SafeAreaView>
   );
 }
