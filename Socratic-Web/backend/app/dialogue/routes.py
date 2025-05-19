@@ -313,3 +313,59 @@ def delete_conversation(conversation_id: int):
         return jsonify({"error": "Failed to delete conversation."}), 500
 # --- End Delete Specific Conversation ---
 
+
+# --- NEW: Update Conversation Title ---
+@dialogue_bp.route('/history/<int:conversation_id>', methods=['PATCH'])
+def update_conversation_title(conversation_id: int):
+    """Updates the title of a specific conversation for the authenticated user."""
+    decoded_token = verify_token()
+    if not decoded_token:
+        current_app.logger.warning(f"PATCH /history/{conversation_id} - Unauthorized: Missing or invalid token.")
+        return jsonify({"error": "Authorization required: Invalid or missing token."}), 401
+
+    firebase_uid = decoded_token.get('uid')
+    if not firebase_uid:
+        current_app.logger.warning(f"PATCH /history/{conversation_id} - Unauthorized: Invalid token payload.")
+        return jsonify({"error": "Invalid token payload."}), 401
+
+    # Get JSON data from request
+    data = request.get_json()
+    if not data or 'title' not in data:
+        current_app.logger.warning(f"PATCH /history/{conversation_id} - Bad request: Missing title field in request.")
+        return jsonify({"error": "Missing 'title' field in request body."}), 400
+
+    new_title = data['title']
+    if not new_title or not isinstance(new_title, str):
+        current_app.logger.warning(f"PATCH /history/{conversation_id} - Bad request: Invalid title format.")
+        return jsonify({"error": "Title must be a non-empty string."}), 400
+
+    user = db.session.scalars(db.select(User).filter_by(firebase_uid=firebase_uid)).first()
+    if not user:
+        current_app.logger.warning(f"PATCH /history/{conversation_id} - User not found in DB for UID: {firebase_uid}")
+        return jsonify({"error": "User not found or conversation access denied."}), 403
+
+    conversation_to_update = db.session.scalars(
+        db.select(Conversation)
+        .filter_by(id=conversation_id, user_id=user.id)  # Ensure user owns the conversation
+    ).first()
+
+    if not conversation_to_update:
+        current_app.logger.warning(
+            f"PATCH /history/{conversation_id} - Conversation not found or not owned by user UID: {firebase_uid}")
+        return jsonify({"error": "Conversation not found or access denied."}), 404
+
+    try:
+        current_app.logger.info(
+            f"PATCH /history/{conversation_id} - Updating title for conversation ID: {conversation_id}, User UID: {firebase_uid}")
+        conversation_to_update.title = new_title
+        conversation_to_update.updated_at = datetime.now(timezone.utc)
+        db.session.commit()
+        current_app.logger.info(
+            f"PATCH /history/{conversation_id} - Successfully updated title for conversation ID: {conversation_id}")
+        return jsonify({"message": "Conversation title updated successfully."}), 200
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"PATCH /history/{conversation_id} - Error updating conversation title: {e}", exc_info=True)
+        return jsonify({"error": "Failed to update conversation title."}), 500
+# --- End Update Conversation Title ---
+

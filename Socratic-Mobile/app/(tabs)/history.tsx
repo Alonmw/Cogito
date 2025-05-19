@@ -1,6 +1,6 @@
 // app/(tabs)/history.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, RefreshControl, Platform, Alert, TextInput, FlatList } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, RefreshControl, Platform, Alert, TextInput, FlatList, TouchableOpacity } from 'react-native';
 import { useAuth } from '@/src/context/AuthContext';
 import apiClientInstance from '@/src/services/api';
 import { ConversationSummary } from '@socratic/common-types';
@@ -16,6 +16,8 @@ import { ThemedText } from '@/src/components/ThemedText';
 import { ThemedButton } from '@/src/components/ThemedButton';
 import { spacing, shadows } from '@/src/constants/spacingAndShadows';
 import { Share } from 'react-native';
+import { SwipeListView, SwipeRow, RowMap } from 'react-native-swipe-list-view';
+import * as Haptics from 'expo-haptics';
 
 export default function HistoryScreen() {
   const { user, isGuest, exitGuestMode } = useAuth();
@@ -297,6 +299,48 @@ export default function HistoryScreen() {
     );
   };
 
+  // Modify renderHiddenItem for SwipeListView to include direct touch handlers
+  const renderHiddenItem = ({ item }: { item: ConversationSummary }) => {
+    // If in edit mode, don't allow swipe actions
+    if (isEditMode) {
+      return <View style={styles.rowBack}></View>;
+    }
+    
+    return (
+      <View style={styles.rowBack}>
+        <TouchableOpacity
+          style={[styles.backLeftBtn, styles.backLeftBtnLeft]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            handleRenameConversation(item.id, item.title);
+          }}
+        >
+          <Ionicons name="pencil-outline" size={24} color="white" />
+          <ThemedText style={styles.backTextWhite}>Edit</ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.backRightBtn, styles.backRightBtnRight]}
+          onPress={() => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            handleDeleteConversation(item.id);
+          }}
+        >
+          <Ionicons name="trash-bin-outline" size={24} color="white" />
+          <ThemedText style={styles.backTextWhite}>Delete</ThemedText>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // Add onSwipeValueChange for haptic feedback
+  const onSwipeValueChange = useCallback((swipeData: { key: string; value: number }) => {
+    const { key, value } = swipeData;
+    // Add haptic feedback when swipe reaches threshold
+    if (Math.abs(value) > 50 && Math.abs(value) < 70) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, []);
+
   if (isLoading && history.length === 0 && !refreshing && !error) {
     return (
       <ThemedView style={[styles.container, { backgroundColor: themeColors.background, justifyContent: 'center', alignItems: 'center' }]}>
@@ -349,14 +393,27 @@ export default function HistoryScreen() {
       ) : null}
 
       {history.length > 0 ? (
-        <FlatList
+        <SwipeListView
           data={history}
           renderItem={renderHistoryItem}
+          renderHiddenItem={renderHiddenItem}
+          leftOpenValue={75} // Width of the left action (Edit)
+          rightOpenValue={-75} // Width of the right action (Delete)
+          onSwipeValueChange={onSwipeValueChange}
           keyExtractor={(item) => item.id.toString()}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.tint} colors={[themeColors.tint]} progressBackgroundColor={'#FAF3E0'} />
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh} 
+              tintColor={themeColors.tint} 
+              colors={[themeColors.tint]} 
+              progressBackgroundColor={'#FAF3E0'} 
+            />
           }
           contentContainerStyle={{ paddingHorizontal: spacing.m, paddingVertical: spacing.s, backgroundColor: '#FAF3E0' }}
+          disableRightSwipe={isEditMode} // Disable swipe when in edit mode
+          disableLeftSwipe={isEditMode} // Disable swipe when in edit mode
+          closeOnRowPress={true} // Close the row when pressing on the visible item
         />
       ) : null}
 
@@ -421,5 +478,50 @@ const styles = StyleSheet.create({
   confirmButton: {
     backgroundColor: '#0c6df2',
     borderRadius: 6,
+  },
+  rowBack: {
+    alignItems: 'center',
+    backgroundColor: '#DDD',
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingLeft: 15,
+    marginVertical: spacing.s / 2,
+    borderRadius: 12,
+    height: '100%',
+  },
+  backLeftBtn: {
+    alignItems: 'center',
+    bottom: 0,
+    justifyContent: 'center',
+    position: 'absolute',
+    top: 0,
+    width: 75,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+  },
+  backLeftBtnLeft: {
+    backgroundColor: '#0c6df2', // Blue color for edit
+    left: 0,
+  },
+  backRightBtn: {
+    alignItems: 'center',
+    bottom: 0,
+    justifyContent: 'center',
+    position: 'absolute',
+    top: 0,
+    width: 75,
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  backRightBtnRight: {
+    backgroundColor: '#FE4A49', // Red color for delete
+    right: 0,
+  },
+  backTextWhite: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginTop: 4,
   },
 });
