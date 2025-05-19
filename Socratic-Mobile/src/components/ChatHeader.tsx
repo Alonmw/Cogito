@@ -1,7 +1,7 @@
 // src/components/ChatHeader.tsx
 import React from 'react';
 // --- Removed StatusBar import ---
-import { View, StyleSheet, Platform, Pressable } from 'react-native';
+import { View, StyleSheet, Platform, Pressable, Share } from 'react-native';
 // --- End Removed Import ---
 import { useAuth } from '@/src/context/AuthContext'; // Adjust path if needed
 import { Colors } from '@/src/constants/Colors'; // Adjust path if needed
@@ -9,30 +9,81 @@ import { useColorScheme } from '@/src/hooks/useColorScheme'; // Adjust path if n
 import { ThemedView } from './ThemedView';
 import { ThemedText } from './ThemedText';
 import { spacing } from '@/src/constants/spacingAndShadows';
+import { Ionicons } from '@expo/vector-icons';
+import { IMessage } from 'react-native-gifted-chat';
 
 interface ChatHeaderProps {
   onNewChatPress: () => void;
   personaName?: string;
+  currentMessages?: IMessage[];
+  conversationTitle?: string;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ onNewChatPress, personaName }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ 
+  onNewChatPress, 
+  personaName, 
+  currentMessages = [],
+  conversationTitle = ''
+}) => {
   const { user, signOut } = useAuth();
   const colorScheme = useColorScheme() ?? 'light';
   const themeColors = Colors[colorScheme];
 
   const userDisplayText = user ? (user.displayName || user.email || 'Profile') : 'Guest';
 
+  const handleShareChat = async () => {
+    if (currentMessages && currentMessages.length > 0) {
+      try {
+        const title = conversationTitle || `Chat with ${personaName}`;
+        const chatContent = currentMessages
+          .map(msg => `${msg.user.name}: ${msg.text}`)
+          .join('\n');
+          
+        const result = await Share.share({
+          message: `${title}\n\n${chatContent}`,
+          title: title,
+        });
+        
+        if (result.action === Share.sharedAction) {
+          console.log('Shared successfully');
+        } else if (result.action === Share.dismissedAction) {
+          console.log('Share dismissed');
+        }
+      } catch (error: any) {
+        console.error('Error sharing chat:', error.message);
+      }
+    } else {
+      console.log('No messages to share');
+    }
+  };
+
   return (
     <ThemedView style={[styles.container, { backgroundColor: themeColors.background, borderBottomColor: themeColors.tabIconDefault }]}>
       <ThemedText type="title" style={styles.title}>{personaName || 'Socratic Partner'}</ThemedText>
-      <ThemedView style={styles.buttonContainer}>
-        <Pressable onPress={onNewChatPress} style={[styles.button, { borderColor: themeColors.tint }]}>
-          <ThemedText style={[styles.buttonText, { color: themeColors.tint }]}>New Chat</ThemedText>
+      
+      <View style={styles.buttonsContainer}>
+        <Pressable
+          onPress={handleShareChat}
+          style={styles.iconButton}
+          accessibilityLabel="Share Conversation"
+          disabled={currentMessages.length === 0}
+        >
+          <Ionicons 
+            name="share-social-outline" 
+            size={28} 
+            color={currentMessages.length > 0 ? themeColors.tint : themeColors.tabIconDefault} 
+          />
         </Pressable>
-        {!user && (
-          <ThemedText style={[styles.guestText, { color: themeColors.text }]}>Guest Mode</ThemedText>
-        )}
-      </ThemedView>
+        
+        <Pressable 
+          onPress={onNewChatPress} 
+          style={styles.iconButton}
+          accessibilityLabel="New Chat"
+        >
+          <Ionicons name="add-circle-outline" size={28} color={themeColors.tint} />
+        </Pressable>
+      </View>
+      
       <ThemedView style={styles.divider} />
     </ThemedView>
   );
@@ -58,26 +109,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
+    flex: 1,
+    textAlign: 'left',
   },
-  buttonContainer: {
+  buttonsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  button: {
-    marginLeft: spacing.s,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderRadius: 6,
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  guestText: {
-    fontSize: 14,
-    marginLeft: spacing.s,
-    fontStyle: 'italic',
+  iconButton: {
+    padding: 10,
   },
 });
 

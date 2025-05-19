@@ -1,11 +1,11 @@
 // app/(tabs)/_layout.tsx
 import { Tabs } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
+import { Link, useRouter } from 'expo-router';
 
 // --- Import an icon set ---
 import { Ionicons } from '@expo/vector-icons'; // Example: Using Ionicons
-// You can choose other sets like:
-// import { MaterialCommunityIcons } from '@expo/vector-icons';
 // --- End Import ---
 
 import { Colors } from '@/src/constants/Colors'; // Adjust path if needed
@@ -16,9 +16,8 @@ import { Platform } from 'react-native'; // For platform-specific styling
 const TabBarIcon = ({ name, color, focused }: { name: any; color: string; focused: boolean }) => {
   // Use the 'any' type for name initially, or a more specific IoniconsName type if you import it.
   // Add a focused prop to potentially use different icons for active state.
-  return <Ionicons name={name} size={28} color={color}  />;
+  return <Ionicons name={name} size={28} color={color} />;
 };
-
 
 export default function TabLayout() {
   const colorScheme = useColorScheme() ?? 'light';
@@ -44,16 +43,9 @@ export default function TabLayout() {
           ...(Platform.OS === 'android' && {
             elevation: 0,
           }),
-          // Adjust height if needed, especially if icons are larger
-          // height: 60,
         },
         headerShown: false, // We are using a custom header in the ChatScreen
         tabBarShowLabel: false, // Set to false if you only want icons
-        tabBarLabelStyle: {
-            fontSize: 10,
-            fontWeight: '500',
-            // marginBottom: Platform.OS === 'ios' ? 0 : 5, // Adjust label position
-        },
       }}>
       {/* Dialogue/Chat Tab */}
       <Tabs.Screen
@@ -97,7 +89,4 @@ export default function TabLayout() {
     </Tabs>
   );
 }
-
-// Import StyleSheet if not already imported (for StyleSheet.hairlineWidth)
-import { StyleSheet } from 'react-native';
 

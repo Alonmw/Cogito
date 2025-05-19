@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import 'react-native-reanimated';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 
@@ -111,10 +112,12 @@ export default function RootLayout() {
     return null;
   }
 
-  // Wrap the main layout component with AuthProvider
+  // Wrap the main layout component with AuthProvider and GestureHandlerRootView
   return (
-    <AuthProvider>
-      <MainLayout />
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <MainLayout />
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

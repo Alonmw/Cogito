@@ -1,6 +1,7 @@
 // app/(tabs)/history.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, RefreshControl, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, RefreshControl, Platform, Alert, TextInput } from 'react-native';
+import { SwipeListView } from 'react-native-swipe-list-view';
 import { useAuth } from '@/src/context/AuthContext';
 import apiClientInstance from '@/src/services/api';
 import { ConversationSummary } from '@socratic/common-types';
@@ -15,6 +16,8 @@ import { ThemedView } from '@/src/components/ThemedView';
 import { ThemedText } from '@/src/components/ThemedText';
 import { ThemedButton } from '@/src/components/ThemedButton';
 import { spacing, shadows } from '@/src/constants/spacingAndShadows';
+import { Share } from 'react-native';
+import SwipeableScreen from '@/src/components/SwipeableScreen';
 
 export default function HistoryScreen() {
   const { user, isGuest, exitGuestMode } = useAuth();
@@ -27,6 +30,9 @@ export default function HistoryScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [currentRenameId, setCurrentRenameId] = useState<number | null>(null);
+  const [newTitle, setNewTitle] = useState('');
 
   const fetchHistory = useCallback(async () => {
     if (!user || isGuest) {
@@ -140,6 +146,47 @@ export default function HistoryScreen() {
     );
   }, [history]);
 
+  const handleRenameConversation = (conversationId: number, title: string) => {
+    setCurrentRenameId(conversationId);
+    setNewTitle(title || 'Untitled Conversation');
+    setIsRenaming(true);
+  };
+
+  const confirmRename = async () => {
+    if (currentRenameId === null) return;
+    
+    try {
+      setIsLoading(true);
+      // This API call might need to be implemented
+      const success = await apiClientInstance.updateConversationTitle(currentRenameId, newTitle);
+      if (success) {
+        // Update local state
+        setHistory((prevHistory) => 
+          prevHistory.map(conv => 
+            conv.id === currentRenameId ? { ...conv, title: newTitle } : conv
+          )
+        );
+        Alert.alert("Success", "Conversation renamed successfully.");
+      } else {
+        Alert.alert("Error", "Failed to rename conversation. Please try again.");
+      }
+    } catch (error: any) {
+      console.error("[HistoryScreen] Error renaming conversation:", error);
+      Alert.alert("Error", error.response?.data?.error || "An error occurred while renaming.");
+    } finally {
+      setIsLoading(false);
+      setIsRenaming(false);
+      setCurrentRenameId(null);
+      setNewTitle('');
+    }
+  };
+
+  const cancelRename = () => {
+    setIsRenaming(false);
+    setCurrentRenameId(null);
+    setNewTitle('');
+  };
+
   const renderHistoryItem = ({ item }: { item: ConversationSummary }) => {
     const personaDetail = personas.find(p => p.id === item.persona_id);
     const personaDisplayName = personaDetail?.name || item.persona_id;
@@ -160,17 +207,109 @@ export default function HistoryScreen() {
           },
         ]}
       >
-        <ThemedText type="defaultSemiBold" style={{ marginBottom: 2, flex: 1 }}>{item.title || "Untitled Conversation"}</ThemedText>
-        <ThemedText style={{ color: themeColors.tabIconDefault, fontStyle: 'italic', fontSize: 13, flex: 1 }}>Chat with: {personaDisplayName}</ThemedText>
-        <ThemedText style={{ color: themeColors.tabIconDefault, fontSize: 12, marginTop: 2, flex: 1 }}>Last updated: {new Date(item.updated_at).toLocaleDateString()} {new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</ThemedText>
-        {isEditMode ? (
-          <Pressable onPress={() => handleDeleteConversation(item.id)} style={{ padding: 8, marginLeft: 10 }} accessibilityLabel="Delete conversation">
-            <Ionicons name="trash-bin-outline" size={24} color={themeColors.tint} />
-          </Pressable>
-        ) : (
-          <Ionicons name="chevron-forward-outline" size={22} color={themeColors.tabIconDefault} />
-        )}
+        <View style={{ flex: 1 }}>
+          <ThemedText type="defaultSemiBold" style={{ marginBottom: 2 }}>{item.title || "Untitled Conversation"}</ThemedText>
+          <ThemedText style={{ color: themeColors.tabIconDefault, fontStyle: 'italic', fontSize: 13 }}>Chat with: {personaDisplayName}</ThemedText>
+          <ThemedText style={{ color: themeColors.tabIconDefault, fontSize: 12, marginTop: 2 }}>Last updated: {new Date(item.updated_at).toLocaleDateString()} {new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</ThemedText>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {isEditMode ? (
+            <Pressable onPress={() => handleDeleteConversation(item.id)} style={{ padding: 8 }} accessibilityLabel="Delete conversation">
+              <Ionicons name="trash-bin-outline" size={24} color={themeColors.tint} />
+            </Pressable>
+          ) : (
+            <Pressable onPress={() => handleShareHistoryItem(item.id)} style={{ padding: 8 }} accessibilityLabel="Share conversation">
+              <Ionicons name="share-social-outline" size={24} color={themeColors.tint} />
+            </Pressable>
+          )}
+        </View>
       </Pressable>
+    );
+  };
+
+  const handleShareHistoryItem = async (conversationId: number) => {
+    try {
+      setIsLoading(true);
+      const fetchedMessages = await apiClientInstance.getConversationMessages(conversationId);
+      if (fetchedMessages && fetchedMessages.length > 0) {
+        const conversation = history.find(conv => conv.id === conversationId);
+        const title = conversation?.title || 'Untitled Conversation';
+        const personaDetail = personas.find(p => p.id === conversation?.persona_id);
+        const personaName = personaDetail?.name || 'Socratic Partner';
+        
+        const chatContent = fetchedMessages
+          .map(msg => `${msg.role === 'user' ? 'User' : personaName}: ${msg.content}`)
+          .join('\n');
+          
+        const result = await Share.share({
+          message: `${title}\n\n${chatContent}`,
+          title: title,
+        });
+        
+        if (result.action === Share.sharedAction) {
+          console.log('Shared conversation successfully');
+        } else if (result.action === Share.dismissedAction) {
+          console.log('Share dismissed');
+        }
+      } else {
+        Alert.alert('Empty Conversation', 'This conversation has no messages to share.');
+      }
+    } catch (error: any) {
+      console.error('[HistoryScreen] Error sharing conversation:', error);
+      Alert.alert('Error', 'Could not load messages for sharing.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderHiddenItem = (data: { item: ConversationSummary }, rowMap: any) => (
+    <View style={styles.rowBack}>
+      <Pressable
+        style={[styles.backLeftBtn, styles.backLeftBtnLeft]}
+        onPress={() => handleDeleteConversation(data.item.id)}
+        accessibilityLabel="Delete conversation"
+      >
+        <Ionicons name="trash-outline" size={24} color="#FFFFFF" />
+        <ThemedText style={styles.backTextWhite}>Delete</ThemedText>
+      </Pressable>
+      
+      <Pressable
+        style={[styles.backRightBtn, styles.backRightBtnRight]}
+        onPress={() => handleRenameConversation(data.item.id, data.item.title)}
+        accessibilityLabel="Rename conversation"
+      >
+        <Ionicons name="create-outline" size={24} color="#FFFFFF" />
+        <ThemedText style={styles.backTextWhite}>Rename</ThemedText>
+      </Pressable>
+    </View>
+  );
+
+  // Render rename modal/popup
+  const renderRenameModal = () => {
+    if (!isRenaming) return null;
+    
+    return (
+      <ThemedView style={styles.modalOverlay}>
+        <ThemedView style={styles.modalContent}>
+          <ThemedText type="title" style={styles.modalTitle}>Rename Conversation</ThemedText>
+          <TextInput
+            style={styles.inputField}
+            value={newTitle}
+            onChangeText={setNewTitle}
+            placeholder="Enter new title"
+            placeholderTextColor="#999"
+            autoFocus
+          />
+          <ThemedView style={styles.modalButtons}>
+            <Pressable onPress={cancelRename} style={styles.modalButton}>
+              <ThemedText style={{ color: themeColors.tint }}>Cancel</ThemedText>
+            </Pressable>
+            <Pressable onPress={confirmRename} style={[styles.modalButton, styles.confirmButton]}>
+              <ThemedText style={{ color: 'white' }}>Rename</ThemedText>
+            </Pressable>
+          </ThemedView>
+        </ThemedView>
+      </ThemedView>
     );
   };
 
@@ -184,58 +323,75 @@ export default function HistoryScreen() {
   }
 
   return (
-    <ThemedView style={[styles.container, { backgroundColor: '#FAF3E0' }]}>
-      <ThemedView style={{
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: spacing.m,
-        paddingTop: Platform.OS === 'android' ? 25 : 15,
-        paddingBottom: 15,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: themeColors.tabIconDefault,
-      }}>
-        <ThemedView style={{ width: 60 }} />
-        <ThemedText type="title" style={{ fontSize: 20, textAlign: 'center' }}>Conversation History</ThemedText>
-        {(history.length > 0 || isEditMode) && user && !isGuest ? (
-          <Pressable onPress={toggleEditMode} style={{ paddingVertical: 5, paddingHorizontal: 10, minWidth: 60, alignItems: 'flex-end' }}>
-            <ThemedText style={{ color: themeColors.tint, fontWeight: '500', fontSize: 16 }}>{isEditMode ? "Done" : "Edit"}</ThemedText>
-          </Pressable>
-        ) : (
+    <SwipeableScreen currentTab="history">
+      <ThemedView style={[styles.container, { backgroundColor: '#FAF3E0' }]}>
+        <ThemedView style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingHorizontal: spacing.m,
+          paddingTop: Platform.OS === 'android' ? 25 : 15,
+          paddingBottom: 15,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: themeColors.tabIconDefault,
+        }}>
           <ThemedView style={{ width: 60 }} />
-        )}
-      </ThemedView>
-
-      {error && !isLoading ? (
-        <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <ThemedText style={{ color: themeColors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>{error}</ThemedText>
-          {(!user || isGuest) ? (
-            <ThemedButton title="Go to Login" onPress={handleGuestGoToLogin} variant="outline" style={{ marginTop: 20 }} />
-          ) : null}
+          <ThemedText type="title" style={{ fontSize: 20, textAlign: 'center' }}>Conversation History</ThemedText>
+          {(history.length > 0 || isEditMode) && user && !isGuest ? (
+            <Pressable onPress={toggleEditMode} style={{ paddingVertical: 5, paddingHorizontal: 10, minWidth: 60, alignItems: 'flex-end' }}>
+              <Ionicons 
+                name={isEditMode ? "checkmark-done-outline" : "pencil-outline"} 
+                size={24} 
+                color={themeColors.tint} 
+              />
+            </Pressable>
+          ) : (
+            <ThemedView style={{ width: 60 }} />
+          )}
         </ThemedView>
-      ) : null}
 
-      {!error && history.length === 0 && !isLoading ? (
-         <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-            <ThemedText style={{ color: themeColors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>No conversation history found.</ThemedText>
-         </ThemedView>
-      ) : null}
+        {error && !isLoading ? (
+          <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <ThemedText style={{ color: themeColors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>{error}</ThemedText>
+            {(!user || isGuest) ? (
+              <ThemedButton title="Go to Login" onPress={handleGuestGoToLogin} variant="outline" style={{ marginTop: 20 }} />
+            ) : null}
+          </ThemedView>
+        ) : null}
 
-      {history.length > 0 ? (
-        <FlatList
-          data={history}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderHistoryItem}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.tint} colors={[themeColors.tint]} progressBackgroundColor={'#FAF3E0'} />
-          }
-          contentContainerStyle={{ paddingHorizontal: spacing.m, paddingVertical: spacing.s, backgroundColor: '#FAF3E0' }}
-        />
-      ) : null}
-    </ThemedView>
+        {!error && history.length === 0 && !isLoading ? (
+          <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+              <ThemedText style={{ color: themeColors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>No conversation history found.</ThemedText>
+          </ThemedView>
+        ) : null}
+
+        {history.length > 0 ? (
+          <SwipeListView
+            data={history}
+            renderItem={renderHistoryItem}
+            renderHiddenItem={renderHiddenItem}
+            leftOpenValue={75} // Width of the delete area when swiped left
+            rightOpenValue={-75} // Width of the rename area when swiped right
+            previewRowKey={'0'} // Optional: Animate first row on load
+            previewOpenValue={-40} // How far to open preview
+            previewOpenDelay={3000} // Preview open delay
+            disableLeftSwipe={isEditMode} // Disable left swipe in edit mode
+            disableRightSwipe={isEditMode} // Disable right swipe in edit mode
+            keyExtractor={(item) => item.id.toString()}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.tint} colors={[themeColors.tint]} progressBackgroundColor={'#FAF3E0'} />
+            }
+            contentContainerStyle={{ paddingHorizontal: spacing.m, paddingVertical: spacing.s, backgroundColor: '#FAF3E0' }}
+          />
+        ) : null}
+
+        {renderRenameModal()}
+      </ThemedView>
+    </SwipeableScreen>
   );
 }
 
+// Add styles for swipe functionality and modal
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -249,86 +405,92 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  headerSidePlaceholder: {
-    width: 60,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  editButton: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    minWidth: 60,
-    alignItems: 'flex-end',
-  },
-  editButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  listContentContainer: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  itemContainer: {
-    flexDirection: 'row',
+  rowBack: {
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    marginVertical: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 1.5,
-    elevation: 2,
-  },
-  itemTextContainer: {
+    backgroundColor: '#DDD',
     flex: 1,
-    marginRight: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingLeft: 15,
+    marginVertical: spacing.s / 2,
+    borderRadius: 12,
   },
-  itemTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 5,
+  backRightBtn: {
+    alignItems: 'center',
+    bottom: 0,
+    justifyContent: 'center',
+    position: 'absolute',
+    top: 0,
+    width: 75,
+    flexDirection: 'column',
   },
-  itemPersona: {
+  backRightBtnRight: {
+    backgroundColor: '#0c6df2', // Blue color for rename
+    right: 0,
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  backLeftBtn: {
+    alignItems: 'center',
+    bottom: 0,
+    justifyContent: 'center',
+    position: 'absolute',
+    top: 0,
+    width: 75,
+    flexDirection: 'column',
+  },
+  backLeftBtnLeft: {
+    backgroundColor: '#FF3B30', // Red color for delete
+    left: 0,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+  },
+  backTextWhite: {
+    color: '#FFF',
     fontSize: 12,
-    marginTop: 3,
+    marginTop: 4,
   },
-  itemDate: {
-    fontSize: 13,
-    opacity: 0.8,
-  },
-  deleteButton: {
-    padding: 8,
-    marginLeft: 10,
-  },
-  centeredMessageContainer: {
-    flex: 1,
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
     padding: 20,
+    width: '80%',
+    ...shadows.medium,
   },
-  errorText: {
-    fontSize: 16,
+  modalTitle: {
+    fontSize: 18,
+    marginBottom: 15,
     textAlign: 'center',
   },
-  emptyText: {
+  inputField: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 15,
     fontSize: 16,
-    textAlign: 'center',
   },
-  loginButton: {
-      marginTop: 20,
-      paddingVertical: 10,
-      paddingHorizontal: 20,
-      borderRadius: 5,
-      borderWidth: 1,
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
-  loginButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
-  }
+  modalButton: {
+    padding: 10,
+    marginLeft: 10,
+  },
+  confirmButton: {
+    backgroundColor: '#0c6df2',
+    borderRadius: 6,
+  },
 });

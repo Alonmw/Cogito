@@ -140,6 +140,28 @@ export class ApiClient {
         }
     }
 
+    public async updateConversationTitle(conversationId: number, newTitle: string): Promise<boolean> {
+        console.log(`[API Client] Attempting to update title for conversation ID: ${conversationId} to "${newTitle}"`);
+        try {
+            const response = await this.axiosInstance.patch(`/api/history/${conversationId}`, {
+                title: newTitle
+            });
+            if (response.status === 200 || response.status === 204) {
+                console.log(`[API Client] Successfully updated title for conversation ID: ${conversationId}`);
+                return true;
+            }
+            console.warn(`[API Client] Unexpected status after updating conversation ${conversationId}: ${response.status}`);
+            return false;
+        } catch (error) {
+            console.error(`[API Client] Error updating title for conversation ${conversationId}:`, error);
+            this.handleApiError(error, `updateConversationTitle(${conversationId})`);
+            if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 404)) {
+                throw error;
+            }
+            return false;
+        }
+    }
+
     private handleApiError(error: any, functionName: string): void {
         if (axios.isAxiosError(error)) {
             const status = error.response?.status;
