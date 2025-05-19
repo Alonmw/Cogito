@@ -121,7 +121,7 @@ def handle_dialogue():
                 model=current_app.config.get('OPENAI_MODEL', 'gpt-4-turbo'),
                 messages=messages_for_openai,
                 temperature=current_app.config.get('OPENAI_TEMPERATURE', 0.7),
-                max_tokens=current_app.config.get('OPENAI_MAX_TOKENS', 100),
+                max_tokens=current_app.config.get('OPENAI_MAX_TOKENS', 256),
                 user=openai_user_param
             )
             ai_response_content = completion.choices[0].message.content.strip()

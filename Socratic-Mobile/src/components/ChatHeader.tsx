@@ -29,11 +29,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ onNewChatPress, personaName }) 
         <Pressable onPress={onNewChatPress} style={[styles.button, { borderColor: themeColors.tint }]}>
           <ThemedText style={[styles.buttonText, { color: themeColors.tint }]}>New Chat</ThemedText>
         </Pressable>
-        {user ? (
-          <Pressable onPress={signOut} style={[styles.button, { borderColor: themeColors.tint }]}>
-            <ThemedText style={[styles.buttonText, { color: themeColors.tint }]}>Logout</ThemedText>
-          </Pressable>
-        ) : (
+        {!user && (
           <ThemedText style={[styles.guestText, { color: themeColors.text }]}>Guest Mode</ThemedText>
         )}
       </ThemedView>

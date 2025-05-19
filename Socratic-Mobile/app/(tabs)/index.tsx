@@ -93,33 +93,46 @@ export default function ChatScreen() {
   useEffect(() => {
     const newPersonaId = params.personaId;
     const newInitialUserMessage = params.initialUserMessage;
+
+    // Set current persona based on params or default
     if (newPersonaId) {
       const foundPersona = personas.find(p => p.id === newPersonaId) || getDefaultPersona();
       setCurrentPersona(foundPersona);
+    } else {
+      // If no personaId is passed, and it's a new chat, use default.
+      // If it's a loaded chat, personaId should have come with conversation data.
       if (!params.conversationId) {
-        setMessages([{
-          _id: `assistant-greeting-${Date.now()}`,
-          text: foundPersona.initialGreeting,
-          createdAt: new Date(),
-          user: { _id: 2, name: foundPersona.name, avatar: foundPersona.image },
-        }]);
+        setCurrentPersona(getDefaultPersona());
       }
-    } else if (!params.conversationId) {
-      const defaultP = getDefaultPersona();
-      setCurrentPersona(defaultP);
+    }
+
+    // If it's a new chat WITHOUT an initialUserMessage (e.g., user just navigated to a new chat tab)
+    // then set the initial greeting.
+    // The case WITH an initialUserMessage is handled by the other useEffect.
+    if (!params.conversationId && !newInitialUserMessage) {
+      const personaToGreetWith = newPersonaId ? (personas.find(p => p.id === newPersonaId) || getDefaultPersona()) : getDefaultPersona();
       setMessages([{
         _id: `assistant-greeting-${Date.now()}`,
-        text: defaultP.initialGreeting,
+        text: personaToGreetWith.initialGreeting,
         createdAt: new Date(),
-        user: { _id: 2, name: defaultP.name, avatar: defaultP.image },
+        user: { _id: 2, name: personaToGreetWith.name, avatar: personaToGreetWith.image },
       }]);
     }
+
+    // If there's an initialUserMessage, set it to the state variable.
+    // The other useEffect will pick it up.
     if (newInitialUserMessage && !params.conversationId) {
       setInitialUserMessage(newInitialUserMessage);
     } else {
-      setInitialUserMessage(undefined);
+      setInitialUserMessage(undefined); // Clear if loading history or no suggestion
     }
+
     setActiveConversationId(params.conversationId ? parseInt(params.conversationId, 10) : undefined);
+
+    // Reset the suggestion sent flag if conversation or persona changes
+    if (params.conversationId) {
+      initialSuggestionSentRef.current = true; // Prevent auto-send for loaded history
+    }
   }, [params.personaId, params.conversationId, params.initialUserMessage]);
 
   const onSend = useCallback(async (newMessages: IMessage[] = []) => {
@@ -179,48 +192,60 @@ export default function ChatScreen() {
   const initialSuggestionSentRef = useRef(false);
 
   useEffect(() => {
-    if (initialUserMessage) {
-      console.log('[DEBUG] initialUserMessage effect triggered. messages:', messages, 'initialUserMessage:', initialUserMessage);
-      // If the only message is the assistant greeting, append the user message
-      if (messages.length === 1 && messages[0].user._id === 2) {
-        const firstUserMsg: IMessage = {
-          _id: `user-initial-${Date.now()}`,
-          text: initialUserMessage,
-          createdAt: new Date(),
-          user: USER,
-        };
-        console.log('[DEBUG] Appending first user message to messages:', firstUserMsg);
-        setMessages(prev => [...prev, firstUserMsg]);
-        setInitialUserMessage(undefined);
-        initialSuggestionSentRef.current = false; // Reset for new suggestion
-      } else if (messages.length === 0) {
-        const greetingMsg = {
-          _id: `assistant-greeting-${Date.now()}`,
-          text: currentPersona.initialGreeting,
-          createdAt: new Date(),
-          user: { _id: 2, name: currentPersona.name, avatar: currentPersona.image },
-        };
-        console.log('[DEBUG] Initializing messages with greeting:', greetingMsg);
-        setMessages([greetingMsg]);
-        // The next render will trigger the above case
-        initialSuggestionSentRef.current = false; // Reset for new suggestion
-      }
-    }
-  }, [initialUserMessage, messages, onSend, currentPersona]);
+    // This effect handles the scenario where the chat is initiated from a persona suggestion.
+    // It ensures the persona's greeting appears first, followed by the user's suggested message.
+    if (initialUserMessage && !params.conversationId) { // Check for initial message AND no existing conversation ID
+      console.log('[DEBUG] initialUserMessage effect for NEW CHAT. initialUserMessage:', initialUserMessage);
 
-  // New effect: when both greeting and user message are present, send the full history (only once)
+      // Determine the persona (either from params or default)
+      const selectedPersonaId = params.personaId || getDefaultPersona().id;
+      const personaToUse = personas.find(p => p.id === selectedPersonaId) || getDefaultPersona();
+
+      // Create the persona's greeting message
+      const greetingMessage: IMessage = {
+        _id: `assistant-greeting-${Date.now()}`,
+        text: personaToUse.initialGreeting,
+        createdAt: new Date(),
+        user: { _id: 2, name: personaToUse.name, avatar: personaToUse.image }, // ASSISTANT user with persona details
+      };
+
+      // Create the user's initial suggested message
+      const userSuggestedMessage: IMessage = {
+        _id: `user-initial-${Date.now()}`,
+        text: initialUserMessage,
+        createdAt: new Date(),
+        user: USER, // Your defined USER object
+      };
+
+      // Set the messages state with user's suggestion first (newest), then the greeting
+      // For Gifted Chat with inverted=true, oldest messages go at the higher indices
+      setMessages([userSuggestedMessage, greetingMessage]);
+
+      console.log('[DEBUG] Messages set with greeting and initial user message:', [userSuggestedMessage, greetingMessage]);
+
+      // Clear initialUserMessage as it has been processed
+      setInitialUserMessage(undefined); 
+
+      // Reset the ref to allow the next effect to send these messages
+      initialSuggestionSentRef.current = false;   
+    }
+  }, [initialUserMessage, params.conversationId, params.personaId, currentPersona]);
+
+  // This effect automatically sends the initial conversation (greeting + user's first message)
+  // to the backend once they are both set in the messages state for a new suggested chat.
   useEffect(() => {
     if (
-      messages.length >= 2 &&
-      messages[messages.length - 1].user._id === USER._id &&
-      messages[messages.length - 2].user._id === 2 &&
-      !initialSuggestionSentRef.current
+      !params.conversationId && // IMPORTANT: Only for new chats, not loaded history
+      messages.length === 2 &&
+      messages[0].user._id === USER._id && // Newest message (user's suggestion)
+      messages[1].user._id === 2 && // Older message (assistant's greeting)
+      !initialSuggestionSentRef.current // Ensure it only runs once per suggestion
     ) {
-      console.log('[DEBUG] Detected greeting + user message, calling onSend([]) ONCE');
-      initialSuggestionSentRef.current = true;
-      onSend([]);
+      console.log('[DEBUG] Detected NEW chat with greeting + user suggestion. Calling onSend([]) to send history.');
+      initialSuggestionSentRef.current = true; // Mark as sent
+      onSend([]); // onSend will use the current `messages` state
     }
-  }, [messages, onSend]);
+  }, [messages, onSend, params.conversationId]);
 
   // Reset the ref when persona or conversation changes
   useEffect(() => {
