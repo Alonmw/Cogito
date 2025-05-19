@@ -469,11 +469,10 @@ const styles = StyleSheet.create({
   },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
   },
   modalButton: {
     padding: 10,
-    marginLeft: 10,
   },
   confirmButton: {
     backgroundColor: '#0c6df2',
