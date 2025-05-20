@@ -1,7 +1,7 @@
 import React from 'react';
 import { FlatList, Pressable, StyleSheet, ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
-import { personas, PersonaUI } from '../src/personas';
+import { personas, PersonaUI } from '@/src/constants/personas';
 import { ThemedView } from '@/src/components/ThemedView';
 import { ThemedText } from '@/src/components/ThemedText';
 import { useThemeColor } from '@/src/hooks/useThemeColor';

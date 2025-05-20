@@ -9,7 +9,7 @@ import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { personas, PersonaUI } from '@/src/personas';
+import { personas, PersonaUI } from '@/src/constants/personas';
 import { ThemedCard } from '@/src/components/ThemedCard';
 import { ThemedView } from '@/src/components/ThemedView';
 import { ThemedText } from '@/src/components/ThemedText';

@@ -23,7 +23,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiHistoryMessage, DialogueResponse, PersonaId, DialoguePayload } from '@socratic/common-types';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {Ionicons} from "@expo/vector-icons";
-import { personas, getDefaultPersona, PersonaUI } from '@/src/personas';
+import { personas, getDefaultPersona, PersonaUI } from '@/src/constants/personas';
 import { ThemedView } from '@/src/components/ThemedView';
 import { ThemedText } from '@/src/components/ThemedText';
 import { spacing, shadows } from '@/src/constants/spacingAndShadows';
