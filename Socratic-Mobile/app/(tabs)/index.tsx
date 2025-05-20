@@ -27,6 +27,7 @@ import { personas, getDefaultPersona, PersonaUI } from '@/src/constants/personas
 import { ThemedView } from '@/src/components/ThemedView';
 import { ThemedText } from '@/src/components/ThemedText';
 import { spacing, shadows } from '@/src/constants/spacingAndShadows';
+import { ActivityIndicator as RNActivityIndicator } from 'react-native';
 
 // Define user objects for Gifted Chat
 const USER: User = { _id: 1, name: 'User' };
@@ -40,6 +41,7 @@ export default function ChatScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const router = useRouter();
+  const [loadingDots, setLoadingDots] = useState('');
 
   const params = useLocalSearchParams<{ conversationId?: string; conversationTitle?: string; personaId?: string; initialUserMessage?: string }>();
   const conversationIdParam = params.conversationId ? parseInt(params.conversationId, 10) : undefined;
@@ -370,6 +372,66 @@ export default function ChatScreen() {
   );
 
   // --- End Minimal Bubble Renderer ---
+
+  // Simple dots animation for the loading indicator
+  useEffect(() => {
+    let dotsTimer: NodeJS.Timeout;
+    
+    if (isLoading) {
+      const animateDots = () => {
+        setLoadingDots(prev => {
+          if (prev === '') return '.';
+          if (prev === '.') return '..';
+          if (prev === '..') return '...';
+          return '';
+        });
+        dotsTimer = setTimeout(animateDots, 350); // Change dots every 350ms
+      };
+      
+      dotsTimer = setTimeout(animateDots, 350);
+    } else {
+      setLoadingDots('');
+    }
+    
+    return () => {
+      if (dotsTimer) clearTimeout(dotsTimer);
+    };
+  }, [isLoading]);
+
+  // --- Custom Footer for Typing Indicator ---
+  const renderFooter = () => {
+    if (!isLoading) return null;
+    
+    return (
+      <ThemedView
+        style={{
+          alignSelf: 'flex-start',
+          backgroundColor: '#EFE3C7',
+          borderRadius: 18,
+          paddingVertical: spacing.s,
+          paddingHorizontal: spacing.m,
+          marginBottom: spacing.s,
+          marginLeft: spacing.m,
+          maxWidth: '80%',
+          flexDirection: 'row',
+          alignItems: 'center',
+          ...shadows.low,
+        }}
+        accessibilityLabel="Assistant is thinking"
+      >
+        <ThemedText
+          style={{
+            color: themeColors.text,
+            fontSize: 16,
+            fontWeight: '400',
+          }}
+        >
+          {`Reasoning${loadingDots}`}
+        </ThemedText>
+      </ThemedView>
+    );
+  };
+
   if (isLoadingHistory) {
     return (
       <ThemedView
@@ -411,6 +473,7 @@ export default function ChatScreen() {
         renderInputToolbar={renderCustomInputToolbar}
         renderComposer={renderCustomComposer}
         renderSend={renderCustomSend}
+        renderFooter={renderFooter}
       />
     </SafeAreaView>
   );

@@ -15,7 +15,7 @@ const PersonaSelectionScreen: React.FC = () => {
   // Themed colors
   const cardBackground = useThemeColor({}, 'background');
   const cardBorder = useThemeColor({}, 'tabIconDefault');
-  const suggestionBg = useThemeColor({ light: '#e0e7ff', dark: '#23264d' }, 'background');
+  const suggestionBg = useThemeColor({ light: '#e8eaf6', dark: '#1a237e' }, 'background');
   const suggestionText = useThemeColor({ light: '#3730a3', dark: '#a5b4fc' }, 'text');
   const selectButtonBg = useThemeColor({ light: '#6366f1', dark: '#3730a3' }, 'tint');
   const selectButtonText = useThemeColor({ light: '#fff', dark: '#fff' }, 'tint');
@@ -33,29 +33,23 @@ const PersonaSelectionScreen: React.FC = () => {
   };
 
   const renderPromptSuggestion = (persona: PersonaUI, suggestion: string) => (
-    <ThemedButton
-      key={suggestion}
-      title={suggestion}
-      onPress={() => handleSelectPersona(persona.id, suggestion)}
-      variant="outline"
-      size="small"
-      style={{
-        ...styles.suggestionButton,
-        backgroundColor: 'transparent',
-        borderColor: primaryActionColor,
-        minHeight: 36,
-        alignItems: 'flex-start',
-        flexWrap: 'wrap',
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-      }}
-      textStyle={{
-        ...styles.suggestionText,
-        color: primaryActionColor,
-        textAlign: 'left',
-        flexWrap: 'wrap',
-      }}
-    />
+    <ThemedView style={styles.suggestionButtonContainer} key={suggestion}>
+      <ThemedButton
+        title={suggestion}
+        onPress={() => handleSelectPersona(persona.id, suggestion)}
+        variant="outline"
+        size="small"
+        style={{
+          ...styles.suggestionButton,
+          backgroundColor: suggestionBg,
+          borderColor: primaryActionColor,
+        }}
+        textStyle={{
+          ...styles.suggestionText,
+          color: primaryActionColor,
+        }}
+      />
+    </ThemedView>
   );
 
   const renderPersonaCard = ({ item }: { item: PersonaUI }) => {
@@ -122,23 +116,32 @@ const styles = StyleSheet.create({
   personaName: { marginBottom: 6 },
   personaDescription: { marginBottom: 12 },
   sectionTitle: { marginBottom: 6 },
-  suggestionsRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 },
+  suggestionsRow: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    marginHorizontal: -4,
+    marginBottom: 12 
+  },
+  suggestionButtonContainer: {
+    margin: 4,
+    maxWidth: '47%',
+    minWidth: '47%',
+  },
   suggestionButton: {
     borderRadius: 8,
-    marginRight: 8,
-    marginBottom: 8,
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    alignItems: 'flex-start',
-    flexWrap: 'wrap',
-    minHeight: 36,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    height: 'auto',
+    minHeight: 44,
+    width: '100%',
   },
   suggestionText: {
-    fontSize: 15,
-    textAlign: 'left',
+    fontSize: 14,
+    textAlign: 'center',
     flexWrap: 'wrap',
+    lineHeight: 18,
   },
   selectButton: {
     borderRadius: 8,
