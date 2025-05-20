@@ -12,7 +12,7 @@ load_dotenv(dotenv_path=dotenv_path)
 class Config:
     """Base configuration settings."""
     # --- Secret Keys ---
-    SECRET_KEY = os.getenv('SECRET_KEY')
+    SECRET_KEY = os.getenv('JWT_SECRET_KEY')
     if not SECRET_KEY:
         raise ValueError("No SECRET_KEY set for Flask application. Please set it in your environment variables.")
     # Removed: JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'dev-fallback-jwt-secret-key')
