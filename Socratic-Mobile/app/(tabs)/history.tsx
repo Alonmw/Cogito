@@ -1,6 +1,6 @@
 // app/(tabs)/history.tsx
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, RefreshControl, Platform, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, RefreshControl, Platform, Alert, TextInput, FlatList, TouchableOpacity } from 'react-native';
 import { useAuth } from '@/src/context/AuthContext';
 import apiClientInstance from '@/src/services/api';
 import { ConversationSummary } from '@socratic/common-types';
@@ -9,6 +9,15 @@ import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { personas, PersonaUI } from '@/src/constants/personas';
+import { ThemedCard } from '@/src/components/ThemedCard';
+import { ThemedView } from '@/src/components/ThemedView';
+import { ThemedText } from '@/src/components/ThemedText';
+import { ThemedButton } from '@/src/components/ThemedButton';
+import { spacing, shadows } from '@/src/constants/spacingAndShadows';
+import { Share } from 'react-native';
+import { SwipeListView, SwipeRow, RowMap } from 'react-native-swipe-list-view';
+import * as Haptics from 'expo-haptics';
 
 export default function HistoryScreen() {
   const { user, isGuest, exitGuestMode } = useAuth();
@@ -21,6 +30,10 @@ export default function HistoryScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [currentRenameId, setCurrentRenameId] = useState<number | null>(null);
+  const [newTitle, setNewTitle] = useState('');
+  const hasInitialized = useRef(false);
 
   const fetchHistory = useCallback(async () => {
     if (!user || isGuest) {
@@ -69,24 +82,31 @@ export default function HistoryScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      // The fetchHistory function itself now contains the isLoading guard.
-      console.log("[HistoryScreen] Focus effect triggered. Calling fetchHistory.");
-      fetchHistory();
+      if (!hasInitialized.current) {
+        fetchHistory();
+        hasInitialized.current = true;
+      }
       setIsEditMode(false); // Reset edit mode when screen comes into focus
-    }, [fetchHistory]) // fetchHistory will only change if user, isGuest, or refreshing changes
+    }, [fetchHistory])
   );
+
+  useEffect(() => {
+    if (refreshing) {
+      fetchHistory();
+    }
+  }, [refreshing, fetchHistory]);
 
   const onRefresh = useCallback(() => {
     console.log("[HistoryScreen] Refresh triggered");
     setRefreshing(true); // This will cause fetchHistory to re-run
   }, []);
 
-  const handlePressConversation = (conversationId: number, title: string) => {
+  const handlePressConversation = (conversationId: number, title: string, personaId: string) => {
     if (isEditMode) return;
     console.log(`[HistoryScreen] Navigating to conversation ID: ${conversationId}`);
     router.push({
       pathname: '/(tabs)',
-      params: { conversationId: conversationId.toString(), conversationTitle: title },
+      params: { conversationId: conversationId.toString(), conversationTitle: title, personaId },
     });
   };
 
@@ -134,94 +154,275 @@ export default function HistoryScreen() {
     );
   }, [history]);
 
-  const renderHistoryItem = ({ item }: { item: ConversationSummary }) => (
-    <Pressable
-      style={({ pressed }) => [
-        styles.itemContainer,
-        {
-          backgroundColor: colorScheme === 'light' ? '#FFFFFF' : themeColors.background,
-          borderColor: themeColors.tabIconDefault,
-        },
-        pressed && !isEditMode && { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : '#333333' }
-      ]}
-      onPress={() => handlePressConversation(item.id, item.title)}
-    >
-      <View style={styles.itemTextContainer}>
-        <Text style={[styles.itemTitle, { color: themeColors.text }]} numberOfLines={2} ellipsizeMode="tail">
-          {item.title || "Untitled Conversation"}
-        </Text>
-        <Text style={[styles.itemDate, { color: themeColors.tabIconDefault }]}>
-          Last updated: {new Date(item.updated_at).toLocaleDateString()} {new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
-      </View>
-      {isEditMode ? (
-        <Pressable onPress={() => handleDeleteConversation(item.id)} style={styles.deleteButton}>
-          <Ionicons name="trash-bin-outline" size={24} color={Colors.light.tint} />
-        </Pressable>
-      ) : (
-        <Ionicons name="chevron-forward-outline" size={22} color={themeColors.tabIconDefault} />
-      )}
-    </Pressable>
-  );
+  const handleRenameConversation = (conversationId: number, title: string) => {
+    setCurrentRenameId(conversationId);
+    setNewTitle(title || 'Untitled Conversation');
+    setIsRenaming(true);
+  };
 
+  const confirmRename = async () => {
+    if (currentRenameId === null) return;
+    
+    try {
+      setIsLoading(true);
+      // This API call might need to be implemented
+      const success = await apiClientInstance.updateConversationTitle(currentRenameId, newTitle);
+      if (success) {
+        // Update local state
+        setHistory((prevHistory) => 
+          prevHistory.map(conv => 
+            conv.id === currentRenameId ? { ...conv, title: newTitle } : conv
+          )
+        );
+        Alert.alert("Success", "Conversation renamed successfully.");
+      } else {
+        Alert.alert("Error", "Failed to rename conversation. Please try again.");
+      }
+    } catch (error: any) {
+      console.error("[HistoryScreen] Error renaming conversation:", error);
+      Alert.alert("Error", error.response?.data?.error || "An error occurred while renaming.");
+    } finally {
+      setIsLoading(false);
+      setIsRenaming(false);
+      setCurrentRenameId(null);
+      setNewTitle('');
+    }
+  };
+
+  const cancelRename = () => {
+    setIsRenaming(false);
+    setCurrentRenameId(null);
+    setNewTitle('');
+  };
+
+  const renderHistoryItem = ({ item }: { item: ConversationSummary }) => {
+    const personaDetail = personas.find(p => p.id === item.persona_id);
+    const personaDisplayName = personaDetail?.name || item.persona_id;
+    return (
+      <Pressable
+        onPress={() => handlePressConversation(item.id, item.title, item.persona_id)}
+        onLongPress={toggleEditMode}
+        accessibilityLabel={`Conversation: ${item.title || 'Untitled Conversation'}`}
+        style={({ pressed }) => [
+          {
+            marginVertical: spacing.s / 2,
+            backgroundColor: pressed && !isEditMode ? '#e7dbc2' : '#F5E9D7',
+            borderRadius: 12,
+            ...shadows.low,
+            padding: spacing.m,
+            flexDirection: 'row',
+            alignItems: 'center',
+          },
+        ]}
+      >
+        <View style={{ flex: 1 }}>
+          <ThemedText type="defaultSemiBold" style={{ marginBottom: 2 }}>{item.title || "Untitled Conversation"}</ThemedText>
+          <ThemedText style={{ color: themeColors.tabIconDefault, fontStyle: 'italic', fontSize: 13 }}>Chat with: {personaDisplayName}</ThemedText>
+          <ThemedText style={{ color: themeColors.tabIconDefault, fontSize: 12, marginTop: 2 }}>Last updated: {new Date(item.updated_at).toLocaleDateString()} {new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</ThemedText>
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {isEditMode ? (
+            <Pressable onPress={() => handleDeleteConversation(item.id)} style={{ padding: 8 }} accessibilityLabel="Delete conversation">
+              <Ionicons name="trash-bin-outline" size={24} color={themeColors.tint} />
+            </Pressable>
+          ) : (
+            <Pressable onPress={() => handleShareHistoryItem(item.id)} style={{ padding: 8 }} accessibilityLabel="Share conversation">
+              <Ionicons name="share-social-outline" size={24} color={themeColors.tint} />
+            </Pressable>
+          )}
+        </View>
+      </Pressable>
+    );
+  };
+
+  const handleShareHistoryItem = async (conversationId: number) => {
+    try {
+      setIsLoading(true);
+      const fetchedMessages = await apiClientInstance.getConversationMessages(conversationId);
+      if (fetchedMessages && fetchedMessages.length > 0) {
+        const conversation = history.find(conv => conv.id === conversationId);
+        const title = conversation?.title || 'Untitled Conversation';
+        const personaDetail = personas.find(p => p.id === conversation?.persona_id);
+        const personaName = personaDetail?.name || 'Socratic Partner';
+        
+        const chatContent = fetchedMessages
+          .map(msg => `${msg.role === 'user' ? 'User' : personaName}: ${msg.content}`)
+          .join('\n');
+          
+        const result = await Share.share({
+          message: `${title}\n\n${chatContent}`,
+          title: title,
+        });
+        
+        if (result.action === Share.sharedAction) {
+          console.log('Shared conversation successfully');
+        } else if (result.action === Share.dismissedAction) {
+          console.log('Share dismissed');
+        }
+      } else {
+        Alert.alert('Empty Conversation', 'This conversation has no messages to share.');
+      }
+    } catch (error: any) {
+      console.error('[HistoryScreen] Error sharing conversation:', error);
+      Alert.alert('Error', 'Could not load messages for sharing.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Render rename modal/popup
+  const renderRenameModal = () => {
+    if (!isRenaming) return null;
+    
+    return (
+      <ThemedView style={styles.modalOverlay}>
+        <ThemedView style={styles.modalContent}>
+          <ThemedText type="title" style={styles.modalTitle}>Rename Conversation</ThemedText>
+          <TextInput
+            style={styles.inputField}
+            value={newTitle}
+            onChangeText={setNewTitle}
+            placeholder="Enter new title"
+            placeholderTextColor="#999"
+            autoFocus
+          />
+          <ThemedView style={styles.modalButtons}>
+            <Pressable onPress={cancelRename} style={styles.modalButton}>
+              <ThemedText style={{ color: themeColors.tint }}>Cancel</ThemedText>
+            </Pressable>
+            <Pressable onPress={confirmRename} style={[styles.modalButton, styles.confirmButton]}>
+              <ThemedText style={{ color: 'white' }}>Rename</ThemedText>
+            </Pressable>
+          </ThemedView>
+        </ThemedView>
+      </ThemedView>
+    );
+  };
+
+  // Modify renderHiddenItem for SwipeListView to include direct touch handlers
+  const renderHiddenItem = ({ item }: { item: ConversationSummary }) => {
+    // If in edit mode, don't allow swipe actions
+    if (isEditMode) {
+      return <View style={styles.rowBack}></View>;
+    }
+    
+    return (
+      <View style={styles.rowBack}>
+        <TouchableOpacity
+          style={[styles.backLeftBtn, styles.backLeftBtnLeft]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            handleRenameConversation(item.id, item.title);
+          }}
+        >
+          <Ionicons name="pencil-outline" size={24} color="white" />
+          <ThemedText style={styles.backTextWhite}>Edit</ThemedText>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.backRightBtn, styles.backRightBtnRight]}
+          onPress={() => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            handleDeleteConversation(item.id);
+          }}
+        >
+          <Ionicons name="trash-bin-outline" size={24} color="white" />
+          <ThemedText style={styles.backTextWhite}>Delete</ThemedText>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // Add onSwipeValueChange for haptic feedback
+  const onSwipeValueChange = useCallback((swipeData: { key: string; value: number }) => {
+    const { key, value } = swipeData;
+    // Add haptic feedback when swipe reaches threshold
+    if (Math.abs(value) > 50 && Math.abs(value) < 70) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, []);
 
   if (isLoading && history.length === 0 && !refreshing && !error) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background, justifyContent: 'center', alignItems: 'center' }]}>
+      <ThemedView style={[styles.container, { backgroundColor: themeColors.background, justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={themeColors.tint} />
-        <Text style={{ color: themeColors.text, marginTop: 10 }}>Loading history...</Text>
-      </SafeAreaView>
+        <ThemedText style={{ color: themeColors.text, marginTop: spacing.m }}>Loading history...</ThemedText>
+      </ThemedView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
-      <View style={styles.headerContainer}>
-        <View style={styles.headerSidePlaceholder} />
-        <Text style={[styles.title, { color: themeColors.text }]}>Conversation History</Text>
+    <ThemedView style={[styles.container, { backgroundColor: '#FAF3E0' }]}>
+      <ThemedView style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: spacing.m,
+        paddingTop: Platform.OS === 'android' ? 25 : 15,
+        paddingBottom: 15,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: themeColors.tabIconDefault,
+      }}>
+        <ThemedView style={{ width: 60 }} />
+        <ThemedText type="title" style={{ fontSize: 20, textAlign: 'center' }}>Conversation History</ThemedText>
         {(history.length > 0 || isEditMode) && user && !isGuest ? (
-            <Pressable onPress={toggleEditMode} style={styles.editButton}>
-                <Text style={[styles.editButtonText, { color: themeColors.tint }]}>
-                    {isEditMode ? "Done" : "Edit"}
-                </Text>
-            </Pressable>
+          <Pressable onPress={toggleEditMode} style={{ paddingVertical: 5, paddingHorizontal: 10, minWidth: 60, alignItems: 'flex-end' }}>
+            <Ionicons 
+              name={isEditMode ? "checkmark-done-outline" : "pencil-outline"} 
+              size={24} 
+              color={themeColors.tint} 
+            />
+          </Pressable>
         ) : (
-            <View style={styles.headerSidePlaceholder} />
+          <ThemedView style={{ width: 60 }} />
         )}
-      </View>
+      </ThemedView>
 
       {error && !isLoading ? (
-        <View style={styles.centeredMessageContainer}>
-          <Text style={[styles.errorText, { color: themeColors.text, opacity: 0.7 }]}>{error}</Text>
+        <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <ThemedText style={{ color: themeColors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>{error}</ThemedText>
           {(!user || isGuest) ? (
-             <Pressable onPress={handleGuestGoToLogin} style={[styles.loginButton, {borderColor: themeColors.tint}]}>
-                <Text style={[styles.loginButtonText, {color: themeColors.tint}]}>Go to Login</Text>
-             </Pressable>
+            <ThemedButton title="Go to Login" onPress={handleGuestGoToLogin} variant="outline" style={{ marginTop: 20 }} />
           ) : null}
-        </View>
+        </ThemedView>
       ) : null}
 
       {!error && history.length === 0 && !isLoading ? (
-         <View style={styles.centeredMessageContainer}>
-            <Text style={[styles.emptyText, { color: themeColors.text, opacity: 0.7 }]}>No conversation history found.</Text>
-         </View>
+        <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <ThemedText style={{ color: themeColors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>No conversation history found.</ThemedText>
+        </ThemedView>
       ) : null}
 
       {history.length > 0 ? (
-        <FlatList
+        <SwipeListView
           data={history}
-          keyExtractor={(item) => item.id.toString()}
           renderItem={renderHistoryItem}
+          renderHiddenItem={renderHiddenItem}
+          leftOpenValue={75} // Width of the left action (Edit)
+          rightOpenValue={-75} // Width of the right action (Delete)
+          onSwipeValueChange={onSwipeValueChange}
+          keyExtractor={(item) => item.id.toString()}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={themeColors.tint} colors={[themeColors.tint]} progressBackgroundColor={themeColors.background} />
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh} 
+              tintColor={themeColors.tint} 
+              colors={[themeColors.tint]} 
+              progressBackgroundColor={'#FAF3E0'} 
+            />
           }
-          contentContainerStyle={styles.listContentContainer}
+          contentContainerStyle={{ paddingHorizontal: spacing.m, paddingVertical: spacing.s, backgroundColor: '#FAF3E0' }}
+          disableRightSwipe={isEditMode} // Disable swipe when in edit mode
+          disableLeftSwipe={isEditMode} // Disable swipe when in edit mode
+          closeOnRowPress={true} // Close the row when pressing on the visible item
         />
       ) : null}
-    </SafeAreaView>
+
+      {renderRenameModal()}
+    </ThemedView>
   );
 }
 
+// Add styles for swipe functionality and modal
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -235,82 +436,91 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  headerSidePlaceholder: {
-    width: 60,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  editButton: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    minWidth: 60,
-    alignItems: 'flex-end',
-  },
-  editButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  listContentContainer: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  itemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    marginVertical: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 1.5,
-    elevation: 2,
-  },
-  itemTextContainer: {
-    flex: 1,
-    marginRight: 10,
-  },
-  itemTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 5,
-  },
-  itemDate: {
-    fontSize: 13,
-    opacity: 0.8,
-  },
-  deleteButton: {
-    padding: 8,
-    marginLeft: 10,
-  },
-  centeredMessageContainer: {
-    flex: 1,
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 12,
     padding: 20,
+    width: '80%',
+    ...shadows.medium,
   },
-  errorText: {
-    fontSize: 16,
+  modalTitle: {
+    fontSize: 18,
+    marginBottom: 15,
     textAlign: 'center',
   },
-  emptyText: {
+  inputField: {
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 15,
     fontSize: 16,
-    textAlign: 'center',
   },
-  loginButton: {
-      marginTop: 20,
-      paddingVertical: 10,
-      paddingHorizontal: 20,
-      borderRadius: 5,
-      borderWidth: 1,
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  loginButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
-  }
+  modalButton: {
+    padding: 10,
+  },
+  confirmButton: {
+    backgroundColor: '#0c6df2',
+    borderRadius: 6,
+  },
+  rowBack: {
+    alignItems: 'center',
+    backgroundColor: '#DDD',
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingLeft: 15,
+    marginVertical: spacing.s / 2,
+    borderRadius: 12,
+    height: '100%',
+  },
+  backLeftBtn: {
+    alignItems: 'center',
+    bottom: 0,
+    justifyContent: 'center',
+    position: 'absolute',
+    top: 0,
+    width: 75,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+  },
+  backLeftBtnLeft: {
+    backgroundColor: '#0c6df2', // Blue color for edit
+    left: 0,
+  },
+  backRightBtn: {
+    alignItems: 'center',
+    bottom: 0,
+    justifyContent: 'center',
+    position: 'absolute',
+    top: 0,
+    width: 75,
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  backRightBtnRight: {
+    backgroundColor: '#FE4A49', // Red color for delete
+    right: 0,
+  },
+  backTextWhite: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginTop: 4,
+  },
 });

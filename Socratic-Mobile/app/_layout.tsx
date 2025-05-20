@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import 'react-native-reanimated';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useColorScheme } from '@/src/hooks/useColorScheme';
 
@@ -48,15 +49,18 @@ function MainLayout() {
 
     const inAppGroup = segments.length > 0 && segments[0] === '(tabs)';
     const onLoginScreen = segments.length > 0 && segments[0] === 'login';
+    const onPersonaSelectionScreen = segments.length > 0 && segments[0] === 'persona-selection';
 
-    // --- Updated Routing Logic ---
+    // --- Updated Routing Logic for Persona Selection ---
     const canAccessApp = user || isGuest; // User can access main app if logged in OR is guest
 
-    if (canAccessApp && !inAppGroup) {
-      // User/Guest should be in the main app area, redirect to tabs/home
-      console.log('[ROUTER] User/Guest authenticated/active, redirecting to (tabs)');
-      router.replace('/(tabs)');
-    } else if (!canAccessApp && !onLoginScreen) {
+    if (canAccessApp) {
+      if (!inAppGroup && !onPersonaSelectionScreen) {
+        // If authenticated/guest but not in tabs or persona selection, go to persona selection
+        console.log('[ROUTER] User/Guest authenticated, navigating to persona-selection');
+        router.replace('/persona-selection');
+      }
+    } else if (!onLoginScreen) {
       // User is not logged in AND not a guest, and not on the login screen -> redirect to login
       console.log('[ROUTER] User signed out/not guest, redirecting to /login');
       router.replace('/login');
@@ -79,6 +83,7 @@ function MainLayout() {
         {/* Define all possible screens/layouts */}
         <Stack.Screen name="login" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="persona-selection" />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
@@ -91,7 +96,10 @@ function MainLayout() {
 export default function RootLayout() {
   // Load fonts here
   const [loaded, error] = useFonts({
-    SpaceMono: require('@/src/assets/fonts/SpaceMono-Regular.ttf'), // Adjust path if needed
+    SpaceMono: require('@/src/assets/fonts/SpaceMono-Regular.ttf'),
+    'Lora-Bold': require('@/src/assets/fonts/Lora-Bold.ttf'),
+    'Lora-SemiBold': require('@/src/assets/fonts/Lora-SemiBold.ttf'),
+    'Inter-Regular': require('@/src/assets/fonts/Inter_24pt-Regular.ttf'),
   });
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
@@ -104,10 +112,12 @@ export default function RootLayout() {
     return null;
   }
 
-  // Wrap the main layout component with AuthProvider
+  // Wrap the main layout component with AuthProvider and GestureHandlerRootView
   return (
-    <AuthProvider>
-      <MainLayout />
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <MainLayout />
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

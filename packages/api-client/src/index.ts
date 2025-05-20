@@ -7,7 +7,8 @@ import {
   ApiErrorResponse,
   ConversationSummary,
   HistoryListResponse,
-  ConversationMessagesResponse
+  ConversationMessagesResponse,
+  PersonaId
 } from '@socratic/common-types';
 
 export type GetIdTokenFunction = () => Promise<string | null>;
@@ -67,12 +68,17 @@ export class ApiClient {
 
     public async postDialogue(
         history: ApiHistoryMessage[],
-        conversationId?: number
+        conversationId?: number,
+        personaId?: PersonaId
     ): Promise<DialogueResponse | null> {
         const payload: DialoguePayload = { history };
         if (conversationId !== undefined) {
             payload.conversation_id = conversationId;
         }
+        if (personaId !== undefined) {
+            payload.persona_id = personaId;
+        }
+        console.log('[DEBUG] POST /api/dialogue payload:', JSON.stringify(payload));
         try {
             const response = await this.axiosInstance.post<DialogueResponse>('/api/dialogue', payload);
             return response.data ?? null;
@@ -127,6 +133,28 @@ export class ApiClient {
         } catch (error) {
             console.error(`[API Client] Error deleting conversation ${conversationId}:`, error); // Keep detailed error log
             this.handleApiError(error, `deleteConversation(${conversationId})`);
+            if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 404)) {
+                throw error;
+            }
+            return false;
+        }
+    }
+
+    public async updateConversationTitle(conversationId: number, newTitle: string): Promise<boolean> {
+        console.log(`[API Client] Attempting to update title for conversation ID: ${conversationId} to "${newTitle}"`);
+        try {
+            const response = await this.axiosInstance.patch(`/api/history/${conversationId}`, {
+                title: newTitle
+            });
+            if (response.status === 200 || response.status === 204) {
+                console.log(`[API Client] Successfully updated title for conversation ID: ${conversationId}`);
+                return true;
+            }
+            console.warn(`[API Client] Unexpected status after updating conversation ${conversationId}: ${response.status}`);
+            return false;
+        } catch (error) {
+            console.error(`[API Client] Error updating title for conversation ${conversationId}:`, error);
+            this.handleApiError(error, `updateConversationTitle(${conversationId})`);
             if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 404)) {
                 throw error;
             }

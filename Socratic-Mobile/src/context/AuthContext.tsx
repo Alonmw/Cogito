@@ -106,7 +106,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
         await GoogleSignin.signIn();
         const { idToken } = await GoogleSignin.getTokens();
-        if (!idToken) throw new Error("Google Sign-In getTokens() failed.");
+        if (!idToken) throw new Error("Google Sign-In failed.");
         const googleCredential = auth.GoogleAuthProvider.credential(idToken);
         await auth().signInWithCredential(googleCredential);
     } catch (error: unknown) {

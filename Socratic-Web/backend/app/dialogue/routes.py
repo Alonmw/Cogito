@@ -4,12 +4,35 @@
 from flask import Blueprint, request, jsonify, current_app
 from openai import OpenAIError
 from ..auth.utils import verify_token
-from ..extensions import db
+from ..extensions import db, limiter
 from ..models import User, Conversation, Message  # Ensure models are imported
 from datetime import datetime, timezone, timedelta
+from pydantic import BaseModel, Field, constr, validator
+from typing import List, Optional, Literal
 
 dialogue_bp = Blueprint('dialogue', __name__, url_prefix='/api')
 
+# Pydantic validation schemas
+class MessageSchema(BaseModel):
+    role: Literal['user', 'assistant'] = Field(..., description="Message role (user or assistant)")
+    content: constr(min_length=1, max_length=5000) = Field(..., description="Message content")
+
+class DialogueRequestSchema(BaseModel):
+    history: List[MessageSchema] = Field(..., description="Conversation history")
+    conversation_id: Optional[int] = Field(None, description="Conversation ID for continuing an existing conversation")
+    persona_id: Optional[str] = Field(None, description="Persona ID for the AI character")
+    
+    @validator('history')
+    def validate_history(cls, v):
+        if not v:
+            raise ValueError("History cannot be empty")
+        if len(v) > 50:  # Set a reasonable maximum
+            raise ValueError("History too long (maximum 50 messages)")
+        return v
+
+# NEW: Schema for conversation title update
+class ConversationTitleUpdateSchema(BaseModel):
+    title: constr(min_length=1, max_length=100) = Field(..., description="New conversation title")
 
 # --- Helper Function: Get or Create User (Keep as is) ---
 def get_or_create_user(firebase_uid: str, email: str | None = None, display_name: str | None = None) -> User | None:
@@ -36,8 +59,8 @@ def get_or_create_user(firebase_uid: str, email: str | None = None, display_name
 
 
 @dialogue_bp.route('/dialogue', methods=['POST'])
+@limiter.limit("10 per minute")  # Stricter limit for AI chat endpoint
 def handle_dialogue():
-    # ... (handle_dialogue logic remains the same as v11) ...
     decoded_token = verify_token()
     current_app.logger.debug(f"POST /dialogue - Decoded token content: {decoded_token}")
 
@@ -80,38 +103,52 @@ def handle_dialogue():
         return jsonify({"error": "OpenAI client not initialized. Check API key."}), 503
 
     try:
-        data = request.get_json()
-        if not data:
-            current_app.logger.warning(f"POST /dialogue - Invalid JSON received from {user_log_id}")
-            return jsonify({"error": "Invalid JSON request body"}), 400
+        # Parse and validate the request data using Pydantic
+        try:
+            raw_data = request.get_json()
+            if not raw_data:
+                current_app.logger.warning(f"POST /dialogue - Invalid JSON received from {user_log_id}")
+                return jsonify({"error": "Invalid JSON request body"}), 400
+            
+            # Validate with Pydantic schema
+            data = DialogueRequestSchema(**raw_data)
+        except Exception as e:
+            current_app.logger.warning(f"POST /dialogue - Validation error: {str(e)}")
+            return jsonify({"error": f"Invalid request data: {str(e)}"}), 400
 
-        conversation_history = data.get('history')
-        incoming_conversation_id = data.get('conversation_id')
-        current_app.logger.info(f"POST /dialogue - Incoming conversation_id from payload: {incoming_conversation_id}")
-
-        if not conversation_history or not isinstance(conversation_history, list):
-            current_app.logger.warning(
-                f"POST /dialogue - Missing/invalid history from {user_log_id}. Type: {type(conversation_history)}")
-            return jsonify({"error": "Missing or invalid 'history' list in request body"}), 400
+        conversation_history = data.history
+        incoming_conversation_id = data.conversation_id
+        # --- Persona support ---
+        incoming_persona_id = data.persona_id or current_app.DEFAULT_PERSONA_ID
+        system_prompt_content = current_app.persona_prompts_content.get(
+            incoming_persona_id,
+            current_app.persona_prompts_content.get(current_app.DEFAULT_PERSONA_ID)
+        )
+        if not system_prompt_content:
+            current_app.logger.error(f"System prompt for persona '{incoming_persona_id}' or default not found.")
+            return jsonify({"error": "Internal server error: Persona configuration issue."}), 500
+        # --- End persona support ---
+        current_app.logger.info(f"POST /dialogue - Incoming conversation_id from payload: {incoming_conversation_id}, persona_id: {incoming_persona_id}")
 
         latest_user_message_content = None
-        if conversation_history and conversation_history[-1].get('role') == 'user':
-            latest_user_message_content = conversation_history[-1].get('content')
+        if conversation_history and conversation_history[-1].role == 'user':
+            latest_user_message_content = conversation_history[-1].content
 
         if len(conversation_history) > max_history:
             conversation_history_for_openai = conversation_history[-max_history:]
         else:
             conversation_history_for_openai = conversation_history
 
-        messages_for_openai = [{"role": "system", "content": system_prompt}]
-        messages_for_openai.extend(conversation_history_for_openai)
+        messages_for_openai = [{"role": "system", "content": system_prompt_content}]
+        # Convert Pydantic models to dictionaries for OpenAI
+        messages_for_openai.extend([msg.dict() for msg in conversation_history_for_openai])
 
         try:
             completion = client.chat.completions.create(
                 model=current_app.config.get('OPENAI_MODEL', 'gpt-4-turbo'),
                 messages=messages_for_openai,
                 temperature=current_app.config.get('OPENAI_TEMPERATURE', 0.7),
-                max_tokens=current_app.config.get('OPENAI_MAX_TOKENS', 100),
+                max_tokens=current_app.config.get('OPENAI_MAX_TOKENS', 256),
                 user=openai_user_param
             )
             ai_response_content = completion.choices[0].message.content.strip()
@@ -144,7 +181,7 @@ def handle_dialogue():
 
                 if not active_conversation:
                     current_app.logger.info(f"POST /dialogue - Creating new conversation for user {db_user.id}")
-                    active_conversation = Conversation(user_id=db_user.id, title=latest_user_message_content[:80])
+                    active_conversation = Conversation(user_id=db_user.id, title=latest_user_message_content[:80], persona_id=incoming_persona_id)
                     db.session.add(active_conversation)
                     db.session.flush()
 
@@ -166,6 +203,7 @@ def handle_dialogue():
         response_payload = {"response": ai_response_content}
         if active_conversation:
             response_payload["conversation_id"] = active_conversation.id
+            response_payload["persona_id"] = active_conversation.persona_id
 
         return jsonify(response_payload)
 
@@ -177,6 +215,7 @@ def handle_dialogue():
 
 # --- Get Conversation History List (Keep as is) ---
 @dialogue_bp.route('/history', methods=['GET'])
+@limiter.limit("30 per minute")
 def get_history_list():
     # ... (logic remains the same as v9/v10) ...
     decoded_token = verify_token()
@@ -201,7 +240,7 @@ def get_history_list():
     ).all()
     history_list = [
         {"id": conv.id, "title": conv.title or f"Conversation from {conv.created_at.strftime('%Y-%m-%d %H:%M')}",
-         "updated_at": conv.updated_at.isoformat()}
+         "updated_at": conv.updated_at.isoformat(), "persona_id": conv.persona_id}
         for conv in conversations
     ]
     current_app.logger.info(
@@ -214,6 +253,7 @@ def get_history_list():
 
 # --- Get Specific Conversation Messages (Keep as is) ---
 @dialogue_bp.route('/history/<int:conversation_id>', methods=['GET'])
+@limiter.limit("30 per minute")
 def get_conversation_messages(conversation_id: int):
     # ... (logic remains the same as v9/v10) ...
     decoded_token = verify_token()
@@ -250,7 +290,7 @@ def get_conversation_messages(conversation_id: int):
     ]
     current_app.logger.info(
         f"GET /history/{conversation_id} - Returning {len(message_list)} messages for user UID: {firebase_uid}")
-    return jsonify({"messages": message_list})
+    return jsonify({"messages": message_list, "persona_id": conversation.persona_id})
 
 
 # --- End Get Specific Conversation ---
@@ -258,6 +298,7 @@ def get_conversation_messages(conversation_id: int):
 
 # --- NEW: Delete Specific Conversation ---
 @dialogue_bp.route('/history/<int:conversation_id>', methods=['DELETE'])
+@limiter.limit("10 per minute")
 def delete_conversation(conversation_id: int):
     """Deletes a specific conversation and its messages for the authenticated user."""
     decoded_token = verify_token()
@@ -301,4 +342,63 @@ def delete_conversation(conversation_id: int):
         current_app.logger.error(f"DELETE /history/{conversation_id} - Error deleting conversation: {e}", exc_info=True)
         return jsonify({"error": "Failed to delete conversation."}), 500
 # --- End Delete Specific Conversation ---
+
+
+# --- NEW: Update Conversation Title ---
+@dialogue_bp.route('/history/<int:conversation_id>', methods=['PATCH'])
+@limiter.limit("10 per minute")
+def update_conversation_title(conversation_id: int):
+    """Updates the title of a specific conversation for the authenticated user."""
+    decoded_token = verify_token()
+    if not decoded_token:
+        current_app.logger.warning(f"PATCH /history/{conversation_id} - Unauthorized: Missing or invalid token.")
+        return jsonify({"error": "Authorization required: Invalid or missing token."}), 401
+
+    firebase_uid = decoded_token.get('uid')
+    if not firebase_uid:
+        current_app.logger.warning(f"PATCH /history/{conversation_id} - Unauthorized: Invalid token payload.")
+        return jsonify({"error": "Invalid token payload."}), 401
+
+    # Get JSON data from request and validate with Pydantic
+    try:
+        raw_data = request.get_json()
+        if not raw_data:
+            current_app.logger.warning(f"PATCH /history/{conversation_id} - Bad request: Missing request body.")
+            return jsonify({"error": "Missing request body."}), 400
+        
+        data = ConversationTitleUpdateSchema(**raw_data)
+        new_title = data.title
+    except Exception as e:
+        current_app.logger.warning(f"PATCH /history/{conversation_id} - Validation error: {str(e)}")
+        return jsonify({"error": f"Invalid title data: {str(e)}"}), 400
+
+    user = db.session.scalars(db.select(User).filter_by(firebase_uid=firebase_uid)).first()
+    if not user:
+        current_app.logger.warning(f"PATCH /history/{conversation_id} - User not found in DB for UID: {firebase_uid}")
+        return jsonify({"error": "User not found or conversation access denied."}), 403
+
+    conversation_to_update = db.session.scalars(
+        db.select(Conversation)
+        .filter_by(id=conversation_id, user_id=user.id)  # Ensure user owns the conversation
+    ).first()
+
+    if not conversation_to_update:
+        current_app.logger.warning(
+            f"PATCH /history/{conversation_id} - Conversation not found or not owned by user UID: {firebase_uid}")
+        return jsonify({"error": "Conversation not found or access denied."}), 404
+
+    try:
+        current_app.logger.info(
+            f"PATCH /history/{conversation_id} - Updating title for conversation ID: {conversation_id}, User UID: {firebase_uid}")
+        conversation_to_update.title = new_title
+        conversation_to_update.updated_at = datetime.now(timezone.utc)
+        db.session.commit()
+        current_app.logger.info(
+            f"PATCH /history/{conversation_id} - Successfully updated title for conversation ID: {conversation_id}")
+        return jsonify({"message": "Conversation title updated successfully."}), 200
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"PATCH /history/{conversation_id} - Error updating conversation title: {e}", exc_info=True)
+        return jsonify({"error": "Failed to update conversation title."}), 500
+# --- End Update Conversation Title ---
 
