@@ -2,20 +2,42 @@
 # v6: Prioritize DATABASE_URL from Render environment
 import json
 import os
-import firebase_admin
-from firebase_admin import credentials
+import openai
 from flask import Flask
 from openai import OpenAI
 import logging
+from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_talisman import Talisman
 
-from .config import Config
-from .extensions import db, cors
+from .config import Config, DevelopmentConfig, ProductionConfig, TestingConfig
+from .extensions import db, cors, migrate, bcrypt, jwt, limiter
 from flask_migrate import Migrate
 from .models import User, Conversation, Message  # Ensure all models are imported
 
+import firebase_admin
+from firebase_admin import credentials
 
-def create_app(config_class=Config):
+# Initialize Firebase Admin only once
+firebase_initialized = False
+firebase_app = None
+
+
+def create_app(config_class=None):
+    """Create the Flask application with the appropriate configuration."""
     app = Flask(__name__, instance_relative_config=True)
+    
+    # Determine which configuration to use based on environment
+    if config_class is None:
+        env = os.getenv('FLASK_ENV', 'development').lower()
+        if env == 'production':
+            config_class = ProductionConfig
+        elif env == 'testing':
+            config_class = TestingConfig
+        else:
+            config_class = DevelopmentConfig
+    
     app.config.from_object(config_class)
     print(f"Instance path: {app.instance_path}")
     app.logger.setLevel(logging.INFO)
@@ -81,9 +103,25 @@ def create_app(config_class=Config):
     except Exception as e:
         print(f"Error initializing Firebase Admin SDK: {e}")
 
+    # Configure CORS
+    CORS(app, resources={r"/api/*": {"origins": app.config.get('ALLOWED_ORIGINS')}})
+
+    # Initialize extensions with app
     db.init_app(app)
-    cors.init_app(app)
-    migrate = Migrate(app, db)
+    migrate.init_app(app, db)
+    bcrypt.init_app(app)
+    jwt.init_app(app)
+    limiter.init_app(app)
+    
+    # Initialize Talisman (security headers)
+    Talisman(
+        app,
+        content_security_policy=None,  # Configure CSP separately if needed
+        force_https=app.config.get('FORCE_HTTPS', True),  # Force HTTPS in production
+        strict_transport_security=True,  # Enable HSTS
+        session_cookie_secure=app.config.get('SESSION_COOKIE_SECURE', True),  # Secure cookies in production
+        session_cookie_http_only=True  # HttpOnly cookies
+    )
 
     # Initialize OpenAI Client
     app.openai_client = None
