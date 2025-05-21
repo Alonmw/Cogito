@@ -5,7 +5,6 @@ import { View, StyleSheet, Platform, Pressable, Share } from 'react-native';
 // --- End Removed Import ---
 import { useAuth } from '@/src/context/AuthContext'; // Adjust path if needed
 import { Colors } from '@/src/constants/Colors'; // Adjust path if needed
-import { useColorScheme } from '@/src/hooks/useColorScheme'; // Adjust path if needed
 import { ThemedView } from './ThemedView';
 import { ThemedText } from './ThemedText';
 import { spacing } from '@/src/constants/spacingAndShadows';
@@ -26,9 +25,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   conversationTitle = ''
 }) => {
   const { user, signOut } = useAuth();
-  const colorScheme = useColorScheme() ?? 'light';
-  const themeColors = Colors[colorScheme];
-
   const userDisplayText = user ? (user.displayName || user.email || 'Profile') : 'Guest';
 
   const handleShareChat = async () => {
@@ -58,7 +54,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   };
 
   return (
-    <ThemedView style={[styles.container, { backgroundColor: themeColors.background, borderBottomColor: themeColors.tabIconDefault }]}>
+    <ThemedView style={[styles.container, { backgroundColor: Colors.background, borderBottomColor: Colors.tabIconDefault }]}>
       <ThemedText type="title" style={styles.title}>{personaName || 'Socratic Partner'}</ThemedText>
       
       <View style={styles.buttonsContainer}>
@@ -71,7 +67,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           <Ionicons 
             name="share-social-outline" 
             size={28} 
-            color={currentMessages.length > 0 ? themeColors.tint : themeColors.tabIconDefault} 
+            color={currentMessages.length > 0 ? Colors.tint : Colors.tabIconDefault} 
           />
         </Pressable>
         
@@ -80,7 +76,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           style={styles.iconButton}
           accessibilityLabel="New Chat"
         >
-          <Ionicons name="add-circle-outline" size={28} color={themeColors.tint} />
+          <Ionicons name="add-circle-outline" size={28} color={Colors.tint} />
         </Pressable>
       </View>
       

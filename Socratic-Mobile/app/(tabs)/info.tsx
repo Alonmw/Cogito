@@ -5,14 +5,10 @@ import { ThemedView } from '@/src/components/ThemedView';
 import { ThemedText } from '@/src/components/ThemedText';
 import { ThemedButton } from '@/src/components/ThemedButton';
 import { ThemedCard } from '@/src/components/ThemedCard';
-import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { Colors } from '@/src/constants/Colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function InfoScreen() {
-  const colorScheme = useColorScheme() ?? 'light';
-  const themeColors = Colors[colorScheme];
-
   const handleContactPress = () => {
     const email = 'alonmor123@gmail.com';
     const subject = 'Socratic Partner App Feedback';
@@ -20,7 +16,7 @@ export default function InfoScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: themeColors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         <ThemedText type="title" style={{ textAlign: 'center', marginBottom: 24 }}>
           About Socratic Partner

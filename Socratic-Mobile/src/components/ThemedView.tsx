@@ -10,7 +10,6 @@ import { shadows, spacing } from '@/src/constants/spacingAndShadows';
  */
 export type ThemedViewProps = ViewProps & {
   lightColor?: string;
-  darkColor?: string;
   shadow?: keyof typeof shadows;
   margin?: keyof typeof spacing | number;
 };
@@ -18,12 +17,11 @@ export type ThemedViewProps = ViewProps & {
 export function ThemedView({
   style,
   lightColor,
-  darkColor,
   shadow,
   margin,
   ...otherProps
 }: ThemedViewProps) {
-  const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'background');
+  const backgroundColor = useThemeColor({ light: lightColor }, 'background');
   const shadowStyle = shadow ? shadows[shadow] : undefined;
   let marginStyle = undefined;
   if (margin !== undefined) {

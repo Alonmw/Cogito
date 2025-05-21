@@ -2,7 +2,6 @@ import React from 'react';
 import { Pressable, ActivityIndicator, StyleSheet, ViewStyle, TextStyle, View } from 'react-native';
 import { Colors } from '@/src/constants/Colors';
 import { spacing, shadows } from '@/src/constants/spacingAndShadows';
-import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 
@@ -31,24 +30,21 @@ export const ThemedButton: React.FC<ThemedButtonProps> = ({
   style,
   textStyle,
 }) => {
-  const colorScheme = useColorScheme() ?? 'light';
-  const theme = Colors[colorScheme];
-
   // Variant styles
   const backgroundColor =
     variant === 'primary'
-      ? theme.tint
+      ? Colors.tint
       : variant === 'secondary'
-      ? theme.icon + '22' // faded icon color
+      ? Colors.icon + '22' // faded icon color
       : 'transparent';
   const borderColor =
-    variant === 'outline' ? theme.tint : 'transparent';
+    variant === 'outline' ? Colors.tint : 'transparent';
   const textColor =
     variant === 'primary'
-      ? theme.background
+      ? Colors.background
       : variant === 'secondary'
-      ? theme.text
-      : theme.tint;
+      ? Colors.text
+      : Colors.tint;
 
   // Size styles
   const sizeStyle =

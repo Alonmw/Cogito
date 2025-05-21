@@ -9,7 +9,6 @@ import { Ionicons } from '@expo/vector-icons'; // Example: Using Ionicons
 // --- End Import ---
 
 import { Colors } from '@/src/constants/Colors'; // Adjust path if needed
-import { useColorScheme } from '@/src/hooks/useColorScheme'; // Adjust path if needed
 import { Platform } from 'react-native'; // For platform-specific styling
 
 // Updated TabBarIcon component
@@ -20,17 +19,14 @@ const TabBarIcon = ({ name, color, focused }: { name: any; color: string; focuse
 };
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme() ?? 'light';
-  const themeColors = Colors[colorScheme];
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: themeColors.tint,
-        tabBarInactiveTintColor: themeColors.tabIconDefault,
+        tabBarActiveTintColor: Colors.tint,
+        tabBarInactiveTintColor: Colors.tabIconDefault,
         tabBarStyle: {
-          backgroundColor: themeColors.background,
-          borderTopColor: themeColors.tabIconDefault, // Subtle border
+          backgroundColor: Colors.background,
+          borderTopColor: Colors.tabIconDefault, // Subtle border
           borderTopWidth: StyleSheet.hairlineWidth, // Use hairline for a thin border
           // Add some shadow for iOS for a bit of depth (optional)
           ...(Platform.OS === 'ios' && {

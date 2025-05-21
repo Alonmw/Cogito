@@ -1,5 +1,5 @@
 // app/_layout.tsx
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router'; // Import useRouter, useSegments
 import * as SplashScreen from 'expo-splash-screen';
@@ -7,8 +7,6 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-
-import { useColorScheme } from '@/src/hooks/useColorScheme';
 
 // --- Import AuthProvider and useAuth hook ---
 import { AuthProvider, useAuth } from '@/src/context/AuthContext'; // Adjust path if needed
@@ -30,7 +28,6 @@ SplashScreen.preventAutoHideAsync();
 
 // --- Main Layout Component ---
 function MainLayout() {
-  const colorScheme = useColorScheme();
   // --- Get isGuest from context ---
   const { user, isGuest, initializing } = useAuth(); // Get user, isGuest, and initializing state
   // --- End Change ---
@@ -78,7 +75,7 @@ function MainLayout() {
   // Always render the Stack navigator
   // The useEffect above handles the redirection
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={DefaultTheme}>
       <Stack screenOptions={{ headerShown: false }}>
         {/* Define all possible screens/layouts */}
         <Stack.Screen name="login" />
@@ -86,7 +83,7 @@ function MainLayout() {
         <Stack.Screen name="persona-selection" />
         <Stack.Screen name="+not-found" />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
     </ThemeProvider>
   );
 }

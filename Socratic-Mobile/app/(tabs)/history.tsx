@@ -5,7 +5,6 @@ import { useAuth } from '@/src/context/AuthContext';
 import apiClientInstance from '@/src/services/api';
 import { ConversationSummary } from '@socratic/common-types';
 import { Colors } from '@/src/constants/Colors';
-import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,8 +20,6 @@ import * as Haptics from 'expo-haptics';
 
 export default function HistoryScreen() {
   const { user, isGuest, exitGuestMode } = useAuth();
-  const colorScheme = useColorScheme() ?? 'light';
-  const themeColors = Colors[colorScheme];
   const router = useRouter();
 
   const [history, setHistory] = useState<ConversationSummary[]>([]);
@@ -217,17 +214,17 @@ export default function HistoryScreen() {
       >
         <View style={{ flex: 1 }}>
           <ThemedText type="defaultSemiBold" style={{ marginBottom: 2 }}>{item.title || "Untitled Conversation"}</ThemedText>
-          <ThemedText style={{ color: themeColors.tabIconDefault, fontStyle: 'italic', fontSize: 13 }}>Chat with: {personaDisplayName}</ThemedText>
-          <ThemedText style={{ color: themeColors.tabIconDefault, fontSize: 12, marginTop: 2 }}>Last updated: {new Date(item.updated_at).toLocaleDateString()} {new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</ThemedText>
+          <ThemedText style={{ color: Colors.tabIconDefault, fontStyle: 'italic', fontSize: 13 }}>Chat with: {personaDisplayName}</ThemedText>
+          <ThemedText style={{ color: Colors.tabIconDefault, fontSize: 12, marginTop: 2 }}>Last updated: {new Date(item.updated_at).toLocaleDateString()} {new Date(item.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</ThemedText>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           {isEditMode ? (
             <Pressable onPress={() => handleDeleteConversation(item.id)} style={{ padding: 8 }} accessibilityLabel="Delete conversation">
-              <Ionicons name="trash-bin-outline" size={24} color={themeColors.tint} />
+              <Ionicons name="trash-bin-outline" size={24} color={Colors.tint} />
             </Pressable>
           ) : (
             <Pressable onPress={() => handleShareHistoryItem(item.id)} style={{ padding: 8 }} accessibilityLabel="Share conversation">
-              <Ionicons name="share-social-outline" size={24} color={themeColors.tint} />
+              <Ionicons name="share-social-outline" size={24} color={Colors.tint} />
             </Pressable>
           )}
         </View>
@@ -288,7 +285,7 @@ export default function HistoryScreen() {
           />
           <ThemedView style={styles.modalButtons}>
             <Pressable onPress={cancelRename} style={styles.modalButton}>
-              <ThemedText style={{ color: themeColors.tint }}>Cancel</ThemedText>
+              <ThemedText style={{ color: Colors.tint }}>Cancel</ThemedText>
             </Pressable>
             <Pressable onPress={confirmRename} style={[styles.modalButton, styles.confirmButton]}>
               <ThemedText style={{ color: 'white' }}>Rename</ThemedText>
@@ -343,9 +340,9 @@ export default function HistoryScreen() {
 
   if (isLoading && history.length === 0 && !refreshing && !error) {
     return (
-      <ThemedView style={[styles.container, { backgroundColor: themeColors.background, justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={themeColors.tint} />
-        <ThemedText style={{ color: themeColors.text, marginTop: spacing.m }}>Loading history...</ThemedText>
+      <ThemedView style={[styles.container, { backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={Colors.tint} />
+        <ThemedText style={{ color: Colors.text, marginTop: spacing.m }}>Loading history...</ThemedText>
       </ThemedView>
     );
   }
@@ -360,7 +357,7 @@ export default function HistoryScreen() {
         paddingTop: Platform.OS === 'android' ? 25 : 15,
         paddingBottom: 15,
         borderBottomWidth: StyleSheet.hairlineWidth,
-        borderBottomColor: themeColors.tabIconDefault,
+        borderBottomColor: Colors.tabIconDefault,
       }}>
         <ThemedView style={{ width: 60 }} />
         <ThemedText type="title" style={{ fontSize: 20, textAlign: 'center' }}>Conversation History</ThemedText>
@@ -369,7 +366,7 @@ export default function HistoryScreen() {
             <Ionicons 
               name={isEditMode ? "checkmark-done-outline" : "pencil-outline"} 
               size={24} 
-              color={themeColors.tint} 
+              color={Colors.tint} 
             />
           </Pressable>
         ) : (
@@ -379,7 +376,7 @@ export default function HistoryScreen() {
 
       {error && !isLoading ? (
         <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <ThemedText style={{ color: themeColors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>{error}</ThemedText>
+          <ThemedText style={{ color: Colors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>{error}</ThemedText>
           {(!user || isGuest) ? (
             <ThemedButton title="Go to Login" onPress={handleGuestGoToLogin} variant="outline" style={{ marginTop: 20 }} />
           ) : null}
@@ -388,7 +385,7 @@ export default function HistoryScreen() {
 
       {!error && history.length === 0 && !isLoading ? (
         <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-            <ThemedText style={{ color: themeColors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>No conversation history found.</ThemedText>
+            <ThemedText style={{ color: Colors.text, opacity: 0.7, fontSize: 16, textAlign: 'center' }}>No conversation history found.</ThemedText>
         </ThemedView>
       ) : null}
 
@@ -405,8 +402,8 @@ export default function HistoryScreen() {
             <RefreshControl 
               refreshing={refreshing} 
               onRefresh={onRefresh} 
-              tintColor={themeColors.tint} 
-              colors={[themeColors.tint]} 
+              tintColor={Colors.tint} 
+              colors={[Colors.tint]} 
               progressBackgroundColor={'#FAF3E0'} 
             />
           }

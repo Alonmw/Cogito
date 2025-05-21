@@ -1,7 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, ViewStyle } from 'react-native';
 import { ThemedView } from './ThemedView';
-import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { Colors } from '@/src/constants/Colors';
 
 export type ThemedCardProps = {
@@ -17,13 +16,8 @@ export const ThemedCard: React.FC<ThemedCardProps> = ({
   onPress,
   shadowVariant = 'medium',
 }) => {
-  const colorScheme = useColorScheme() ?? 'light';
-  const theme = Colors[colorScheme];
   // Card background: slightly different from main background for contrast
-  const cardBackground =
-    colorScheme === 'light'
-      ? '#F5E9D7' // a bit darker than #FAF3E0
-      : '#232528';
+  const cardBackground = '#F5E9D7'; // a bit darker than #FAF3E0
 
   const content = (
     <ThemedView

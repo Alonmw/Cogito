@@ -6,11 +6,11 @@ import {
 } from 'react-native';
 import { useAuth } from '@/src/context/AuthContext';
 import { Colors } from '@/src/constants/Colors';
-import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { ThemedButton } from '@/src/components/ThemedButton';
 import { ThemedCard } from '@/src/components/ThemedCard';
 import { ThemedView } from '@/src/components/ThemedView';
 import { ThemedText } from '@/src/components/ThemedText';
+import { RandomQuote } from '@/src/components/RandomQuote';
 
 const googleLogoUri = 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png';
 
@@ -32,19 +32,16 @@ export default function LoginScreen() {
     passwordResetSent,
     clearAuthErrors,
   } = useAuth();
-  const colorScheme = useColorScheme();
-  const themeColors = Colors[colorScheme ?? 'light'];
 
   const [isLoginView, setIsLoginView] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-
-  const googleButtonTextColor = colorScheme === 'dark' ? '#0a7ea4' : themeColors.tint;
-  const googleButtonBackgroundColor = colorScheme === 'light' ? '#F0F0F0' : '#F2F2F7';
-  const googleButtonBorderColor = themeColors.tabIconDefault;
-  const actionButtonTextColor = colorScheme === 'dark' ? '#0a7ea4' : '#FFFFFF';
+  const googleButtonTextColor = Colors.tint;
+  const googleButtonBackgroundColor = '#F0F0F0';
+  const googleButtonBorderColor = Colors.tabIconDefault;
+  const actionButtonTextColor = '#FFFFFF';
 
   const handleRegister = () => {
       if (!name.trim() || !email.trim() || !password.trim()) {
@@ -85,14 +82,11 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
-      <ThemedView style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <ThemedView style={[styles.container, { backgroundColor: Colors.background }]}>
         <ThemedView style={styles.topSection}>
-          <ThemedText type="title" style={styles.title}>
-            Welcome to Socratic Partner
-          </ThemedText>
-          <ThemedText type="subtitle" style={styles.subtitle}>
-            {isLoginView ? 'Sign in to your account' : 'Create a new account'}
-          </ThemedText>
+          <ThemedView style={styles.quoteContainer}>
+            <RandomQuote />
+          </ThemedView>
         </ThemedView>
         <ThemedView style={styles.bottomSection}>
           <ThemedCard style={styles.formCard}>
@@ -100,9 +94,9 @@ export default function LoginScreen() {
               // --- Login Form ---
               <>
                 <TextInput
-                  style={[styles.input, { color: themeColors.text, borderColor: themeColors.tabIconDefault, backgroundColor: themeColors.background }]}
+                  style={[styles.input, { color: Colors.text, borderColor: Colors.tabIconDefault, backgroundColor: Colors.background }]}
                   placeholder="Email"
-                  placeholderTextColor={themeColors.tabIconDefault}
+                  placeholderTextColor={Colors.tabIconDefault}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -110,9 +104,9 @@ export default function LoginScreen() {
                   editable={!authInProgress}
                 />
                 <TextInput
-                  style={[styles.input, { color: themeColors.text, borderColor: themeColors.tabIconDefault, backgroundColor: themeColors.background }]}
+                  style={[styles.input, { color: Colors.text, borderColor: Colors.tabIconDefault, backgroundColor: Colors.background }]}
                   placeholder="Password"
-                  placeholderTextColor={themeColors.tabIconDefault}
+                  placeholderTextColor={Colors.tabIconDefault}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
@@ -123,7 +117,7 @@ export default function LoginScreen() {
                 </Pressable>
                 {isSendingPasswordReset && (
                   <ThemedView style={styles.feedbackContainer}>
-                    <ActivityIndicator size="small" color={themeColors.text} />
+                    <ActivityIndicator size="small" color={Colors.text} />
                     <ThemedText style={[styles.feedbackText, { marginLeft: 10 }]}>{'Sending reset email...'}</ThemedText>
                   </ThemedView>
                 )}
@@ -155,18 +149,18 @@ export default function LoginScreen() {
               // --- Registration Form ---
               <>
                 <TextInput
-                  style={[styles.input, { color: themeColors.text, borderColor: themeColors.tabIconDefault, backgroundColor: themeColors.background }]}
+                  style={[styles.input, { color: Colors.text, borderColor: Colors.tabIconDefault, backgroundColor: Colors.background }]}
                   placeholder="Name"
-                  placeholderTextColor={themeColors.tabIconDefault}
+                  placeholderTextColor={Colors.tabIconDefault}
                   value={name}
                   onChangeText={setName}
                   autoCapitalize="words"
                   editable={!authInProgress}
                 />
                 <TextInput
-                  style={[styles.input, { color: themeColors.text, borderColor: themeColors.tabIconDefault, backgroundColor: themeColors.background }]}
+                  style={[styles.input, { color: Colors.text, borderColor: Colors.tabIconDefault, backgroundColor: Colors.background }]}
                   placeholder="Email"
-                  placeholderTextColor={themeColors.tabIconDefault}
+                  placeholderTextColor={Colors.tabIconDefault}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -174,9 +168,9 @@ export default function LoginScreen() {
                   editable={!authInProgress}
                 />
                 <TextInput
-                  style={[styles.input, { color: themeColors.text, borderColor: themeColors.tabIconDefault, backgroundColor: themeColors.background }]}
+                  style={[styles.input, { color: Colors.text, borderColor: Colors.tabIconDefault, backgroundColor: Colors.background }]}
                   placeholder="Password (min. 6 characters)"
-                  placeholderTextColor={themeColors.tabIconDefault}
+                  placeholderTextColor={Colors.tabIconDefault}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
@@ -202,9 +196,9 @@ export default function LoginScreen() {
           {isLoginView && (
             <>
               <ThemedView style={styles.orSeparator}>
-                <ThemedView style={[styles.line, {backgroundColor: themeColors.tabIconDefault}]} />
-                <ThemedText style={[styles.orText, {color: themeColors.tabIconDefault}]}>OR</ThemedText>
-                <ThemedView style={[styles.line, {backgroundColor: themeColors.tabIconDefault}]} />
+                <ThemedView style={[styles.line, {backgroundColor: Colors.tabIconDefault}]} />
+                <ThemedText style={[styles.orText, {color: Colors.tabIconDefault}]}>OR</ThemedText>
+                <ThemedView style={[styles.line, {backgroundColor: Colors.tabIconDefault}]} />
               </ThemedView>
               <Pressable
                 onPress={googleSignIn}
@@ -232,15 +226,15 @@ export default function LoginScreen() {
               </Pressable>
               {isSigningIn && (
                 <ThemedView style={styles.loadingContainer}>
-                  <ActivityIndicator size="small" color={themeColors.text} />
-                  <ThemedText style={{ marginLeft: 10, color: themeColors.text }}>{'Signing in...'}</ThemedText>
+                  <ActivityIndicator size="small" color={Colors.text} />
+                  <ThemedText style={{ marginLeft: 10, color: Colors.text }}>{'Signing in...'}</ThemedText>
                 </ThemedView>
               )}
               {signInError && (
                 <ThemedText style={styles.errorText}>Error: {signInError}</ThemedText>
               )}
               <Pressable onPress={continueAsGuest} disabled={authInProgress} style={styles.guestButton}>
-                <ThemedText style={[styles.guestText, { color: themeColors.tabIconDefault }]}>
+                <ThemedText style={[styles.guestText, { color: Colors.tabIconDefault }]}>
                   Continue as Guest
                 </ThemedText>
               </Pressable>
@@ -248,7 +242,7 @@ export default function LoginScreen() {
           )}
           {/* --- Toggle Login/Register View - ALWAYS VISIBLE --- */}
           <Pressable onPress={toggleView} disabled={authInProgress} style={styles.toggleButton}>
-            <ThemedText style={[styles.toggleText, { color: themeColors.tint }]}>
+            <ThemedText style={[styles.toggleText, { color: Colors.tint }]}>
               {isLoginView ? "Don't have an account? Sign Up" : "Already have an account? Log In"}
             </ThemedText>
           </Pressable>
@@ -265,10 +259,17 @@ const styles = StyleSheet.create({
     backgroundColor: undefined,
   },
   topSection: {
-    paddingTop: 48,
+    paddingTop: 98,
     paddingBottom: 12,
     alignItems: 'center',
     justifyContent: 'flex-start',
+    width: '100%',
+    paddingHorizontal: 16,
+  },
+  quoteContainer: {
+    marginBottom: 30,
+    width: '100%',
+    alignItems: 'center',
   },
   bottomSection: {
     flex: 1,
@@ -312,6 +313,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
     marginTop: 10,
   },
   actionButtonText: {

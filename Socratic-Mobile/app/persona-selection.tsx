@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { personas, PersonaUI } from '@/src/constants/personas';
 import { ThemedView } from '@/src/components/ThemedView';
 import { ThemedText } from '@/src/components/ThemedText';
-import { useThemeColor } from '@/src/hooks/useThemeColor';
+import { Colors } from '@/src/constants/Colors';
 import { ThemedCard } from '@/src/components/ThemedCard';
 import { ThemedButton } from '@/src/components/ThemedButton';
 
@@ -13,12 +13,12 @@ const PersonaSelectionScreen: React.FC = () => {
   const [selectedPersonaId, setSelectedPersonaId] = React.useState<string | null>(null);
 
   // Themed colors
-  const cardBackground = useThemeColor({}, 'background');
-  const cardBorder = useThemeColor({}, 'tabIconDefault');
-  const suggestionBg = useThemeColor({ light: '#e8eaf6', dark: '#1a237e' }, 'background');
-  const suggestionText = useThemeColor({ light: '#3730a3', dark: '#a5b4fc' }, 'text');
-  const selectButtonBg = useThemeColor({ light: '#6366f1', dark: '#3730a3' }, 'tint');
-  const selectButtonText = useThemeColor({ light: '#fff', dark: '#fff' }, 'tint');
+  const cardBackground = Colors.background;
+  const cardBorder = Colors.tabIconDefault;
+  const suggestionBg = '#e8eaf6';
+  const suggestionText = '#3730a3';
+  const selectButtonBg = '#6366f1';
+  const selectButtonText = '#fff';
 
   // Set the standard action color for all primary buttons on this screen
   const primaryActionColor = selectButtonBg;

@@ -2,7 +2,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '@/src/constants/Colors'; // Adjust path if needed
-import { useColorScheme } from '@/src/hooks/useColorScheme'; // Adjust path if needed
 
 // Define the structure for a message (can be shared in types/index.ts later)
 interface Message {
@@ -17,19 +16,17 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
-  const colorScheme = useColorScheme() ?? 'light'; // Default to light if undefined
   const isUser = message.sender === 'user';
-  const themeColors = Colors[colorScheme]; // Get theme colors
 
-  // Determine background and text colors based on sender and theme
-  // Using tint for user, and a slightly different background/card for assistant
+  // Determine background and text colors based on sender
+  // Using tint for user, and a slightly different background for assistant
   const bubbleBackgroundColor = isUser
-    ? themeColors.tint
-    : (colorScheme === 'light' ? '#E5E5EA' : '#2C2C2E'); // Example: Specific grays for assistant
+    ? Colors.tint
+    : '#E5E5EA'; // Light gray for assistant
 
   const textColor = isUser
-    ? (colorScheme === 'light' ? '#FFFFFF' : '#FFFFFF') // White text on tint background usually works
-    : themeColors.text; // Default text color for assistant
+    ? '#FFFFFF' // White text on tint background
+    : Colors.text; // Default text color for assistant
 
   return (
     <View

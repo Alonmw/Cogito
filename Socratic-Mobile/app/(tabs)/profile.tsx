@@ -3,7 +3,6 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { useAuth } from '@/src/context/AuthContext';
 import { Colors } from '@/src/constants/Colors';
-import { useColorScheme } from '@/src/hooks/useColorScheme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedView } from '@/src/components/ThemedView';
 import { ThemedText } from '@/src/components/ThemedText';
@@ -12,8 +11,6 @@ import { ThemedCard } from '@/src/components/ThemedCard';
 
 export default function ProfileScreen() {
   const { user, signOut, isGuest, exitGuestMode } = useAuth();
-  const colorScheme = useColorScheme() ?? 'light';
-  const themeColors = Colors[colorScheme];
 
   const handleLogout = () => {
     Alert.alert(
@@ -31,7 +28,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: themeColors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background }}>
       <ThemedView style={{ flex: 1, padding: 20 }}>
         <ThemedText type="title" style={{ textAlign: 'center', marginBottom: 28 }}>
           Profile

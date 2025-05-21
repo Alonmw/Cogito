@@ -17,7 +17,6 @@ import {
 import { useAuth } from '@/src/context/AuthContext';
 import apiClientInstance from '@/src/services/api';
 import { Colors } from '@/src/constants/Colors';
-import { useColorScheme } from '@/src/hooks/useColorScheme';
 import ChatHeader from '@/src/components/ChatHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiHistoryMessage, DialogueResponse, PersonaId, DialoguePayload } from '@socratic/common-types';
@@ -35,8 +34,6 @@ const ASSISTANT: User = { _id: 2, name: 'Socratic Partner' };
 
 export default function ChatScreen() {
   const { user, isGuest } = useAuth();
-  const colorScheme = useColorScheme() ?? 'light';
-  const themeColors = Colors[colorScheme];
   const [messages, setMessages] = useState<IMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -293,7 +290,7 @@ export default function ChatScreen() {
         style={[
           {
             alignSelf: isUser ? 'flex-end' : 'flex-start',
-            backgroundColor: isUser ? themeColors.tint : '#EFE3C7',
+            backgroundColor: isUser ? Colors.tint : '#EFE3C7',
             borderRadius: 18,
             paddingVertical: spacing.s,
             paddingHorizontal: spacing.m,
@@ -306,7 +303,7 @@ export default function ChatScreen() {
       >
         <ThemedText
           style={{
-            color: isUser ? '#fff' : themeColors.text,
+            color: isUser ? '#fff' : Colors.text,
             fontSize: 16,
             fontWeight: isUser ? '600' : '400',
           }}
@@ -334,7 +331,7 @@ export default function ChatScreen() {
     <Composer
       {...props}
       textInputStyle={{
-        color: themeColors.text,
+        color: Colors.text,
         fontSize: 16,
         backgroundColor: '#FAF3E0', // Subtle contrast with input bar
         borderRadius: 20,
@@ -356,7 +353,7 @@ export default function ChatScreen() {
           width: 44,
           height: 44,
           borderRadius: 22,
-          backgroundColor: themeColors.tint,
+          backgroundColor: Colors.tint,
           alignItems: 'center',
           justifyContent: 'center',
           marginLeft: 8,
@@ -421,7 +418,7 @@ export default function ChatScreen() {
       >
         <ThemedText
           style={{
-            color: themeColors.text,
+            color: Colors.text,
             fontSize: 16,
             fontWeight: '400',
           }}
@@ -437,13 +434,13 @@ export default function ChatScreen() {
       <ThemedView
         style={{
           flex: 1,
-          backgroundColor: themeColors.background,
+          backgroundColor: Colors.background,
           justifyContent: 'center',
           alignItems: 'center',
         }}
       >
-        <ActivityIndicator size="large" color={themeColors.tint} />
-        <ThemedText style={{ color: themeColors.text, marginTop: spacing.m, fontSize: 16 }}>
+        <ActivityIndicator size="large" color={Colors.tint} />
+        <ThemedText style={{ color: Colors.text, marginTop: spacing.m, fontSize: 16 }}>
           Loading conversation...
         </ThemedText>
       </ThemedView>
@@ -451,7 +448,7 @@ export default function ChatScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}> 
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors.background }]}> 
       <ChatHeader 
         onNewChatPress={handleNewChatPress} 
         personaName={currentPersona.name} 
