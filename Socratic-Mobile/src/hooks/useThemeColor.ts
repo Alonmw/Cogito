@@ -6,7 +6,7 @@
 import { Colors } from '@/src/constants/Colors';
 
 export function useThemeColor(
-  props: { light?: string; dark?: string },
+  props: { light?: string },
   colorName: keyof typeof Colors
 ) {
   // Use light color from props if provided, otherwise use theme color

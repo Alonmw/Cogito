@@ -1,5 +1,5 @@
 // app/_layout.tsx
-import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DefaultTheme } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router'; // Import useRouter, useSegments
 import * as SplashScreen from 'expo-splash-screen';
@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Colors } from '@/src/constants/Colors';
 
 // --- Import AuthProvider and useAuth hook ---
 import { AuthProvider, useAuth } from '@/src/context/AuthContext'; // Adjust path if needed
@@ -22,6 +23,18 @@ GoogleSignin.configure({
 });
 // --- End Google Sign-In Configuration ---
 
+// Configure the navigation theme
+const theme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: Colors.tint,
+    background: Colors.background,
+    card: Colors.background,
+    text: Colors.text,
+    border: Colors.tabIconDefault,
+  },
+};
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -75,8 +88,14 @@ function MainLayout() {
   // Always render the Stack navigator
   // The useEffect above handles the redirection
   return (
-    <ThemeProvider value={DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
+    <>
+      <Stack 
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: theme.colors.background }
+        }}
+        theme={theme}
+      >
         {/* Define all possible screens/layouts */}
         <Stack.Screen name="login" />
         <Stack.Screen name="(tabs)" />
@@ -84,7 +103,7 @@ function MainLayout() {
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="light" />
-    </ThemeProvider>
+    </>
   );
 }
 // --- End Main Layout Component ---

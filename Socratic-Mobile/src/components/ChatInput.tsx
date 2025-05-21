@@ -2,7 +2,6 @@
 import React from 'react';
 import { View, TextInput, Button, StyleSheet, Platform } from 'react-native';
 import { Colors } from '@/src/constants/Colors'; // Adjust path if needed
-import { useColorScheme } from '@/src/hooks/useColorScheme'; // Adjust path if needed
 
 interface ChatInputProps {
   inputText: string;
@@ -17,24 +16,22 @@ const ChatInput: React.FC<ChatInputProps> = ({
   onSend,
   isLoading,
 }) => {
-  const colorScheme = useColorScheme();
-
   return (
-    <View style={[styles.inputContainer, { borderTopColor: Colors[colorScheme ?? 'light'].tabIconDefault }]}>
+    <View style={[styles.inputContainer, { borderTopColor: Colors.tabIconDefault }]}>
       <TextInput
         style={[
           styles.input,
           {
-            color: Colors[colorScheme ?? 'light'].text,
-            borderColor: Colors[colorScheme ?? 'light'].tabIconDefault,
+            color: Colors.text,
+            borderColor: Colors.tabIconDefault,
             // Removed background color setting that used '.card'
-            // backgroundColor: Colors[colorScheme ?? 'light'].card,
+            // backgroundColor: Colors.card,
           },
         ]}
         value={inputText}
         onChangeText={setInputText}
         placeholder="Type your message..."
-        placeholderTextColor={Colors[colorScheme ?? 'light'].tabIconDefault}
+        placeholderTextColor={Colors.tabIconDefault}
         editable={!isLoading} // Disable input while loading
         multiline // Allow multiple lines
         // Add other props like autoFocus, keyboardType etc. if needed
@@ -43,7 +40,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         title="Send"
         onPress={onSend}
         disabled={isLoading || inputText.trim().length === 0}
-        color={Platform.OS === 'ios' ? Colors[colorScheme ?? 'light'].tint : undefined} // iOS uses color prop
+        color={Platform.OS === 'ios' ? Colors.tint : undefined} // iOS uses color prop
       />
     </View>
   );
@@ -55,7 +52,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderTopWidth: StyleSheet.hairlineWidth, // Use hairline width for subtle border
     alignItems: 'center',
-    // backgroundColor: Colors[colorScheme ?? 'light'].background, // Apply background later
+    // backgroundColor: Colors.background, // Apply background later
   },
   input: {
     flex: 1,
