@@ -7,7 +7,7 @@
     "icon": "./src/assets/images/owl-logo-2.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "io.alonmw.socratic-questioner",

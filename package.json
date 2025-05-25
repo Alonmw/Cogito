@@ -1,21 +1,38 @@
 {
-  "name": "Socratic-Project",
+  "name": "socratic-project",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "description": "Socratic Project - Mobile and Web Applications",
+  "packageManager": "pnpm@10.10.0",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "android": "expo run:android",
-    "ios": "expo run:ios"
+    "dev:mobile": "pnpm --filter socratic-mobile start",
+    "build:mobile": "pnpm --filter socratic-mobile build",
+    "android": "pnpm --filter socratic-mobile android",
+    "ios": "pnpm --filter socratic-mobile ios",
+    "dev:web": "pnpm --filter @socratic/frontend-react dev",
+    "build:web": "pnpm --filter @socratic/frontend-react build",
+    "dev:backend": "pnpm --filter @socratic/backend dev",
+    "install:all": "pnpm install",
+    "clean": "pnpm --filter '*' clean",
+    "lint": "pnpm --filter '*' lint",
+    "test": "pnpm --filter '*' test"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.10.0+sha512.d615db246fe70f25dcfea6d8d73dee782ce23e2245e3c4f6f888249fb568149318637dca73c2c5c8ef2a4ca0d5657fb9567188bfab47f566d1ee6ce987815c39",
+  "workspaces": [
+    "Socratic-Mobile",
+    "Socratic-Web/backend",
+    "Socratic-Web/frontend-react",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
   "dependencies": {
     "expo": "~52.0.46",
     "react": "18.3.1",
-    "react-native": "0.76.9",
-    "react-native-svg": "^15.12.0"
+    "react-native": "0.76.9"
   }
 }

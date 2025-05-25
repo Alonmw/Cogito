@@ -1,5 +1,5 @@
 // app/(tabs)/index.tsx - Using Gifted Chat & Header
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { StyleSheet, View, Platform, Alert, Text, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import {
   GiftedChat,
@@ -45,6 +45,13 @@ export default function ChatScreen() {
   const [activeConversationId, setActiveConversationId] = useState<number | undefined>(conversationIdParam);
   const [currentPersona, setCurrentPersona] = useState<PersonaUI>(getDefaultPersona());
   const [initialUserMessage, setInitialUserMessage] = useState<string | undefined>(undefined);
+
+  // Define ASSISTANT_CHAT_USER with current persona info
+  const ASSISTANT_CHAT_USER: User = useMemo(() => ({
+    _id: 2,
+    name: currentPersona.name,
+    avatar: currentPersona.image,
+  }), [currentPersona]);
 
   const initialGreetingMessage: IMessage = {
     _id: `assistant-greeting-${Date.now()}`,
@@ -258,12 +265,6 @@ export default function ChatScreen() {
               content: String(msg.text || ''), // Ensure content is string
           }))
           .reverse();
-  };
-
-  const ASSISTANT_CHAT_USER: User = {
-    _id: 2,
-    name: currentPersona.name,
-    avatar: currentPersona.image,
   };
 
   const handleClearChat = useCallback(() => {

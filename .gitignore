@@ -43,6 +43,7 @@ Socratic-Web/etc/secret/
 # Generated native directories (Expo Prebuild/CNG)
 /android/
 /ios/
+.expo/
 
 # Operating System files
 Socratic-Web/.Ds_store
