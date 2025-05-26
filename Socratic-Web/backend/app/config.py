@@ -37,6 +37,10 @@ class Config:
     OPENAI_TEMPERATURE = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
     OPENAI_MAX_TOKENS = int(os.getenv("OPENAI_MAX_TOKENS", "256"))
 
+    # --- Audio Transcription Settings ---
+    MAX_AUDIO_FILE_SIZE = int(os.getenv("MAX_AUDIO_FILE_SIZE", "25000000"))  # 25MB
+    ALLOWED_AUDIO_FORMATS = os.getenv("ALLOWED_AUDIO_FORMATS", "audio/mpeg,audio/wav,audio/m4a,audio/mp4,audio/webm").split(",")
+
     # --- Security Settings ---
     # Force HTTPS in production
     FORCE_HTTPS = os.getenv("FORCE_HTTPS", "True").lower() == "true"

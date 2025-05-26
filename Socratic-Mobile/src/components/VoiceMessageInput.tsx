@@ -25,6 +25,7 @@ try {
 }
 import { Colors } from '@/src/constants/Colors';
 import { spacing } from '@/src/constants/spacingAndShadows';
+import apiClient from '@/src/services/api';
 
 interface VoiceMessageInputProps {
   onVoiceMessageReady: (transcript: string) => void;
@@ -319,12 +320,40 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
       if (uri) {
         console.log('Recording stopped and stored at', uri);
         setIsProcessingAudio(true);
-        // TODO: Process audio for STT in next phase
-        // For now, just simulate processing
-        setTimeout(() => {
+        
+        try {
+          // Call the transcription API
+          const transcript = await apiClient.transcribeAudio(uri);
+          
+          if (transcript && transcript.trim()) {
+            console.log('✅ Transcription successful:', transcript);
+            onVoiceMessageReady(transcript);
+          } else {
+            console.warn('⚠️ Transcription returned empty or null result');
+            Alert.alert(
+              'Transcription Failed', 
+              'Could not transcribe the audio. Please try speaking more clearly or check your internet connection.'
+            );
+          }
+        } catch (error) {
+          console.error('❌ Transcription error:', error);
+          Alert.alert(
+            'Transcription Error', 
+            'Failed to process the audio recording. Please try again.'
+          );
+        } finally {
           setIsProcessingAudio(false);
-          onVoiceMessageReady('Voice message transcription will be implemented in the next phase.');
-        }, 2000);
+          
+          // Clean up the audio file after processing
+          if (FileSystem) {
+            try {
+              await FileSystem.deleteAsync(uri, { idempotent: true });
+              console.log('🗑️ Deleted processed audio file');
+            } catch (deleteError) {
+              console.warn('Could not delete processed audio file:', deleteError);
+            }
+          }
+        }
       } else {
         Alert.alert('Error', 'Could not get recording data.');
         setIsProcessingAudio(false);

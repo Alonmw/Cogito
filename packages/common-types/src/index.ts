@@ -59,4 +59,12 @@ export interface ConversationMessagesResponse {
     persona_id: PersonaId;
 }
 
+/**
+ * Represents the structure of the response from the POST /api/transcribe endpoint.
+ */
+export interface TranscriptionResponse {
+    transcript: string;
+    success: boolean;
+}
+
 export type PersonaId = "socrates" | "nietzsche" | "kant";

@@ -8,6 +8,7 @@ import {
   ConversationSummary,
   HistoryListResponse,
   ConversationMessagesResponse,
+  TranscriptionResponse,
   PersonaId
 } from '@socratic/common-types';
 
@@ -34,8 +35,8 @@ export class ApiClient {
         // Add request interceptor to attach auth token
         this.axiosInstance.interceptors.request.use(
             async (config: InternalAxiosRequestConfig) => {
-                // Add token to dialogue and history endpoints
-                if (config.url?.startsWith('/api/dialogue') || config.url?.startsWith('/api/history')) {
+                // Add token to dialogue, history, and transcription endpoints
+                if (config.url?.startsWith('/api/dialogue') || config.url?.startsWith('/api/history') || config.url?.startsWith('/api/transcribe')) {
                     console.log(`[API Client Interceptor] Request to protected route: ${config.url}`); // Log which route
                     try {
                         const idToken = await this.getIdToken();
@@ -159,6 +160,42 @@ export class ApiClient {
                 throw error;
             }
             return false;
+        }
+    }
+
+    public async transcribeAudio(audioUri: string): Promise<string | null> {
+        console.log(`[API Client] Attempting to transcribe audio file: ${audioUri}`);
+        try {
+            // Create FormData for file upload
+            const formData = new FormData();
+            
+            // For React Native, we need to create a file object
+            const audioFile = {
+                uri: audioUri,
+                type: 'audio/wav', // Default to WAV, could be made configurable
+                name: 'recording.wav',
+            } as any;
+            
+            formData.append('audio', audioFile);
+            
+            const response = await this.axiosInstance.post<TranscriptionResponse>('/api/transcribe', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                timeout: 30000, // 30 second timeout for audio processing
+            });
+            
+            if (response.data?.transcript) {
+                console.log(`[API Client] Successfully transcribed audio: "${response.data.transcript}"`);
+                return response.data.transcript;
+            } else {
+                console.warn('[API Client] Transcription response missing transcript field');
+                return null;
+            }
+        } catch (error) {
+            console.error(`[API Client] Error transcribing audio:`, error);
+            this.handleApiError(error, 'transcribeAudio');
+            return null;
         }
     }
 

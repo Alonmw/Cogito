@@ -12,3 +12,4 @@ psycopg2-binary>=2.9.10
 pydantic
 Flask-Limiter
 Flask-Talisman
+python-multipart

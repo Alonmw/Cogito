@@ -150,8 +150,10 @@ def create_app(config_class=None):
 
     from .auth.routes import auth_bp
     from .dialogue.routes import dialogue_bp
+    from .transcription.routes import transcription_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(dialogue_bp)
+    app.register_blueprint(transcription_bp, url_prefix='/api')
     print("Blueprints registered.")
 
     @app.route('/')
