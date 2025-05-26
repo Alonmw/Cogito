@@ -63,15 +63,23 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
   const durationIntervalId = useRef<NodeJS.Timeout | null>(null);
   const isRecordingRef = useRef(false); // Synchronous tracking for PanResponder
   const recordingRef = useRef<any | null>(null); // Keep a ref to the recording for cleanup
+  const isGestureOverCancelZoneRef = useRef(false); // Synchronous tracking for cancel zone state
+  const pressStartTime = useRef<number | null>(null); // Track press start time for short press detection
+  const shortPressTimeoutId = useRef<NodeJS.Timeout | null>(null); // Timeout to auto-cancel short recordings
 
   // Cleanup function
   const cleanupRecording = async () => {
     console.log('🧹 Cleaning up recording resources');
     
-    // Clear timer first
+    // Clear timers first
     if (durationIntervalId.current) {
       clearInterval(durationIntervalId.current);
       durationIntervalId.current = null;
+    }
+    
+    if (shortPressTimeoutId.current) {
+      clearTimeout(shortPressTimeoutId.current);
+      shortPressTimeoutId.current = null;
     }
     
     // Reset states immediately
@@ -79,6 +87,7 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
     isRecordingRef.current = false;
     setShowCancelZone(false);
     setIsGestureOverCancelZone(false);
+    isGestureOverCancelZoneRef.current = false;
     
     // Clean up recording object FIRST and SYNCHRONOUSLY
     const currentRecording = recording || recordingRef.current;
@@ -158,6 +167,11 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
   useEffect(() => {
     onRecordingStateChange?.(isRecording);
   }, [isRecording, onRecordingStateChange]);
+
+  // Debug: Log cancel zone state changes
+  useEffect(() => {
+    console.log('🎯 isGestureOverCancelZone state changed to:', isGestureOverCancelZone);
+  }, [isGestureOverCancelZone]);
 
   // Start recording
   const handleStartRecording = async () => {
@@ -350,6 +364,8 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
     
     // Reset remaining states
     setShowCancelZone(false);
+    setIsGestureOverCancelZone(false);
+    isGestureOverCancelZoneRef.current = false;
     
     // Clean up recording object
     const currentRecording = recording || recordingRef.current;
@@ -400,6 +416,20 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
           console.log('❌ Recording blocked due to current state');
           return;
         }
+        // Record press start time for short press detection
+        pressStartTime.current = Date.now();
+        
+        // Set up auto-cancel timeout for quick taps
+        shortPressTimeoutId.current = setTimeout(() => {
+          if (isRecordingRef.current && pressStartTime.current) {
+            const pressDuration = Date.now() - pressStartTime.current;
+            if (pressDuration < 500) {
+              console.log('⚡ Auto-cancelling recording (quick tap timeout)');
+              handleCancelRecording();
+            }
+          }
+        }, 500); // Check after 0.5 seconds
+        
         handleStartRecording();
       },
       onPanResponderMove: (evt, gestureState) => {
@@ -412,14 +442,18 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
 
         // Check if over cancel threshold
         if (gestureState.dx < CANCEL_THRESHOLD) {
-          if (!isGestureOverCancelZone) {
+          if (!isGestureOverCancelZoneRef.current) {
+            console.log('🔴 Entering cancel zone');
+            isGestureOverCancelZoneRef.current = true;
             setIsGestureOverCancelZone(true);
             if (Haptics) {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }
           }
         } else {
-          if (isGestureOverCancelZone) {
+          if (isGestureOverCancelZoneRef.current) {
+            console.log('🟢 Exiting cancel zone');
+            isGestureOverCancelZoneRef.current = false;
             setIsGestureOverCancelZone(false);
           }
         }
@@ -471,6 +505,18 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
           useNativeDriver: true,
         }).start();
 
+        // Clear the auto-cancel timeout since we're handling the release manually
+        if (shortPressTimeoutId.current) {
+          clearTimeout(shortPressTimeoutId.current);
+          shortPressTimeoutId.current = null;
+        }
+        
+        // Check for short press (less than 0.5 seconds)
+        const pressDuration = pressStartTime.current ? Date.now() - pressStartTime.current : 0;
+        const isShortPress = pressDuration < 500; // 0.5 seconds
+        
+        console.log('📏 Press duration:', pressDuration, 'ms, isShortPress:', isShortPress);
+
         // Capture the current recording before clearing states
         const currentRecording = recording || recordingRef.current;
 
@@ -478,9 +524,14 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
         setIsRecording(false);
         isRecordingRef.current = false;
         setIsGestureOverCancelZone(false);
+        isGestureOverCancelZoneRef.current = false;
+        pressStartTime.current = null; // Reset press time
 
         if (gestureState.dx < CANCEL_THRESHOLD) {
-          console.log('🗑️ Cancelling recording');
+          console.log('🗑️ Cancelling recording (slide to cancel)');
+          handleCancelRecording();
+        } else if (isShortPress) {
+          console.log('⚡ Cancelling recording (short press)');
           handleCancelRecording();
         } else {
           console.log('✅ Stopping and processing recording');
@@ -508,10 +559,18 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
           useNativeDriver: true,
         }).start();
         
+        // Clear the auto-cancel timeout
+        if (shortPressTimeoutId.current) {
+          clearTimeout(shortPressTimeoutId.current);
+          shortPressTimeoutId.current = null;
+        }
+        
         if (isRecordingRef.current && !isProcessingAudio) {
           handleCancelRecording();
         }
         setIsGestureOverCancelZone(false);
+        isGestureOverCancelZoneRef.current = false;
+        pressStartTime.current = null; // Reset press time
       },
     })
   ).current;
@@ -551,7 +610,7 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
               { color: isGestureOverCancelZone ? '#FFF' : '#FF6B6B' },
             ]}
           >
-            {isGestureOverCancelZone ? 'Release to Cancel' : '← Slide all the way left to Cancel'}
+            {isGestureOverCancelZone ? 'Release to Cancel' : '← Slide to Cancel'}
           </Text>
         </Animated.View>
         
