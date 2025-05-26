@@ -44,6 +44,7 @@ Socratic-Web/etc/secret/
 /android/
 /ios/
 .expo/
+Socratic-Mobile/expo-env.d.ts
 
 # Operating System files
 Socratic-Web/.Ds_store

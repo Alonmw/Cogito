@@ -1,6 +1,6 @@
 // app/(tabs)/index.tsx - Using Gifted Chat & Header
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { StyleSheet, View, Platform, Alert, Text, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
+import { StyleSheet, View, Platform, Alert, Text, ActivityIndicator, KeyboardAvoidingView, Animated } from 'react-native';
 import {
   GiftedChat,
   IMessage,
@@ -27,6 +27,7 @@ import { ThemedView } from '@/src/components/ThemedView';
 import { ThemedText } from '@/src/components/ThemedText';
 import { spacing, shadows } from '@/src/constants/spacingAndShadows';
 import { ActivityIndicator as RNActivityIndicator } from 'react-native';
+import VoiceMessageInput from '@/src/components/VoiceMessageInput';
 
 // Define user objects for Gifted Chat
 const USER: User = { _id: 1, name: 'User' };
@@ -39,6 +40,9 @@ export default function ChatScreen() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const router = useRouter();
   const [loadingDots, setLoadingDots] = useState('');
+  const [inputText, setInputText] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const inputOpacity = useRef(new Animated.Value(1)).current;
 
   const params = useLocalSearchParams<{ conversationId?: string; conversationTitle?: string; personaId?: string; initialUserMessage?: string }>();
   const conversationIdParam = params.conversationId ? parseInt(params.conversationId, 10) : undefined;
@@ -149,6 +153,7 @@ export default function ChatScreen() {
     if (isLoading) return;
 
     setIsLoading(true);
+    setInputText(''); // Clear input text when sending
 
     let historyToSend: IMessage[] = [];
     if (newMessages.length > 0) {
@@ -320,7 +325,8 @@ export default function ChatScreen() {
       {...props}
       containerStyle={{
         backgroundColor: '#F5E9D7', // Parchment-like input bar
-        padding: spacing.s,
+        paddingHorizontal: spacing.m, // Use horizontal padding for symmetrical margins
+        paddingVertical: spacing.s,
         flexDirection: 'row',
         alignItems: 'center',
         // No border, no shadow
@@ -329,44 +335,70 @@ export default function ChatScreen() {
   );
 
   const renderCustomComposer = (props: ComposerProps) => (
-    <Composer
-      {...props}
-      textInputStyle={{
-        color: Colors.text,
-        fontSize: 16,
-        backgroundColor: '#FAF3E0', // Subtle contrast with input bar
-        borderRadius: 20,
-        paddingHorizontal: spacing.m,
-        minHeight: 40,
-        flex: 1,
-        textAlignVertical: 'center',
-        borderWidth: 0,
-        borderColor: 'transparent',
-        shadowColor: 'transparent',
-      }}
-    />
+    <Animated.View style={{ opacity: inputOpacity, flex: 1 }}>
+      <Composer
+        {...props}
+        text={inputText}
+        onTextChanged={setInputText}
+        textInputStyle={{
+          color: Colors.text,
+          fontSize: 16,
+          backgroundColor: '#FAF3E0', // Subtle contrast with input bar
+          borderRadius: 20,
+          paddingHorizontal: spacing.m,
+          minHeight: 40,
+          textAlignVertical: 'center',
+          borderWidth: 0,
+          borderColor: 'transparent',
+          shadowColor: 'transparent',
+        }}
+      />
+    </Animated.View>
   );
 
+  const handleVoiceMessageReady = (transcript: string) => {
+    // Set the transcript in the input and trigger send
+    const userMessage: IMessage = {
+      _id: `user-${Date.now()}`,
+      text: transcript,
+      createdAt: new Date(),
+      user: USER,
+    };
+    onSend([userMessage]);
+  };
+
+  const handleSendPress = () => {
+    if (inputText.trim()) {
+      const userMessage: IMessage = {
+        _id: `user-${Date.now()}`,
+        text: inputText.trim(),
+        createdAt: new Date(),
+        user: USER,
+      };
+      setInputText('');
+      onSend([userMessage]);
+    }
+  };
+
+  const handleRecordingStateChange = (recordingState: boolean) => {
+    setIsRecording(recordingState);
+    
+    // Animate input opacity based on recording state
+    Animated.timing(inputOpacity, {
+      toValue: recordingState ? 0 : 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
   const renderCustomSend = (props: SendProps<IMessage>) => (
-    <Send {...props}>
-      <View
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 22,
-          backgroundColor: Colors.tint,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginLeft: 8,
-          marginRight: spacing.s,
-          marginBottom: 5,
-        }}
-        accessibilityRole="button"
-        accessibilityLabel="Send message"
-      >
-        <Ionicons name="send" size={24} color="#fff" />
-      </View>
-    </Send>
+    <VoiceMessageInput
+      onVoiceMessageReady={handleVoiceMessageReady}
+      isDisabled={isLoading}
+      hasText={inputText.trim().length > 0}
+      onSendPress={handleSendPress}
+      onRecordingStateChange={handleRecordingStateChange}
+    />
   );
 
   // --- End Minimal Bubble Renderer ---
