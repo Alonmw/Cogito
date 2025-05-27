@@ -145,6 +145,18 @@ export default function ChatScreen() {
     }
   }, [params.personaId, params.conversationId, params.initialUserMessage]);
 
+  const messagesRef = useRef<IMessage[]>([]);
+  const activeConversationIdRef = useRef<number | undefined>(undefined);
+
+  // Update refs when state changes
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversationId;
+  }, [activeConversationId]);
+
   const onSend = useCallback(async (newMessages: IMessage[] = []) => {
     if (!user && !isGuest) {
       Alert.alert("Login Required", "Please log in or continue as guest to use the chat.");
@@ -158,29 +170,32 @@ export default function ChatScreen() {
     let historyToSend: IMessage[] = [];
     if (newMessages.length > 0) {
       // Called from GiftedChat: append new messages to current state
-      const updatedMessages = GiftedChat.append(messages, newMessages);
+      const updatedMessages = GiftedChat.append(messagesRef.current, newMessages);
       setMessages(updatedMessages);
       historyToSend = updatedMessages;
       console.log('[DEBUG] onSend called with newMessages. updatedMessages:', updatedMessages);
     } else {
       // Called for initial suggestion: use current messages state
-      historyToSend = messages;
-      console.log('[DEBUG] onSend called with no newMessages. using messages:', messages);
+      historyToSend = messagesRef.current;
+      console.log('[DEBUG] onSend called with no newMessages. using messages:', messagesRef.current);
     }
 
+    const currentConversationId = activeConversationIdRef.current;
     const apiHistory = mapToApiHistory(historyToSend);
     console.log('[DEBUG] Actually sending apiHistory to backend:', apiHistory);
+    console.log('[DEBUG] historyToSend length:', historyToSend.length);
+    console.log('[DEBUG] activeConversationId at send time:', currentConversationId);
     const payload: DialoguePayload = { history: apiHistory };
-    if (activeConversationId !== undefined) payload.conversation_id = activeConversationId;
+    if (currentConversationId !== undefined) payload.conversation_id = currentConversationId;
     if (currentPersona.id !== undefined) payload.persona_id = currentPersona.id as PersonaId;
     console.log('[DEBUG] POST /api/dialogue payload:', JSON.stringify(payload));
 
     try {
-      const dialogueApiResponse = await apiClientInstance.postDialogue(apiHistory, activeConversationId, currentPersona.id as PersonaId);
+      const dialogueApiResponse = await apiClientInstance.postDialogue(apiHistory, currentConversationId, currentPersona.id as PersonaId);
       if (dialogueApiResponse && dialogueApiResponse.response) {
         const responseText = dialogueApiResponse.response;
         const returnedConversationId = dialogueApiResponse.conversation_id;
-        if (returnedConversationId && (!activeConversationId || activeConversationId !== returnedConversationId) ) {
+        if (returnedConversationId && (!currentConversationId || currentConversationId !== returnedConversationId) ) {
           setActiveConversationId(returnedConversationId);
         }
         const aiResponse: IMessage = {
@@ -198,7 +213,7 @@ export default function ChatScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isLoading, isGuest, activeConversationId, messages, currentPersona]);
+  }, [user, isLoading, isGuest, currentPersona]);
 
   const initialSuggestionSentRef = useRef(false);
 
@@ -357,6 +372,10 @@ export default function ChatScreen() {
   );
 
   const handleVoiceMessageReady = (transcript: string) => {
+    console.log('[DEBUG] Voice message ready with transcript:', transcript);
+    console.log('[DEBUG] Current messages before voice message:', messages.length);
+    console.log('[DEBUG] Current activeConversationId:', activeConversationId);
+    
     // Set the transcript in the input and trigger send
     const userMessage: IMessage = {
       _id: `user-${Date.now()}`,

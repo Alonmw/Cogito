@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Alert,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 // Conditional imports with fallbacks for development
@@ -686,7 +687,7 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
             accessibilityLabel="Send message"
           >
             {isProcessingAudio ? (
-              <Ionicons name="hourglass" size={24} color="#fff" />
+              <ActivityIndicator size="small" color="#fff" style={{ opacity: 0.7 }} />
             ) : (
               <Ionicons name="send" size={24} color="#fff" />
             )}
