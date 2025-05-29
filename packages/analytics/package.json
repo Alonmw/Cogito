@@ -1,0 +1,24 @@
+{
+  "name": "@socratic/analytics",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared analytics service for Socratic Partner apps",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@socratic/common-types": "workspace:*"
+  },
+  "peerDependencies": {
+    "@react-native-firebase/analytics": "^20.0.0"
+  }
+} 

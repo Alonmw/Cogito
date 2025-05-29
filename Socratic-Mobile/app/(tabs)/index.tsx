@@ -16,6 +16,7 @@ import {
 } from 'react-native-gifted-chat';
 import { useAuth } from '@/src/context/AuthContext';
 import apiClientInstance from '@/src/services/api';
+import { analyticsService } from '@/src/services/analytics';
 import { Colors } from '@/src/constants/Colors';
 import ChatHeader from '@/src/components/ChatHeader';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -157,6 +158,25 @@ export default function ChatScreen() {
     activeConversationIdRef.current = activeConversationId;
   }, [activeConversationId]);
 
+  // Track conversation started with first message
+  const trackConversationStarted = useCallback(async (
+    firstMessage: string, 
+    conversationType: 'new_chat' | 'persona_suggestion' | 'voice_initiated'
+  ) => {
+    const metadata = analyticsService.getMessageMetadata(firstMessage);
+    
+    await analyticsService.trackConversationStarted({
+      persona_id: currentPersona.id,
+      persona_name: currentPersona.name,
+      first_message: firstMessage,
+      first_message_length: metadata.length,
+      first_message_word_count: metadata.word_count,
+      conversation_type: conversationType,
+      is_guest_user: isGuest,
+      timestamp: Date.now(),
+    });
+  }, [currentPersona, isGuest]);
+
   const onSend = useCallback(async (newMessages: IMessage[] = []) => {
     if (!user && !isGuest) {
       Alert.alert("Login Required", "Please log in or continue as guest to use the chat.");
@@ -168,16 +188,48 @@ export default function ChatScreen() {
     setInputText(''); // Clear input text when sending
 
     let historyToSend: IMessage[] = [];
+    let isFirstMessage = false;
+    
     if (newMessages.length > 0) {
       // Called from GiftedChat: append new messages to current state
       const updatedMessages = GiftedChat.append(messagesRef.current, newMessages);
       setMessages(updatedMessages);
       historyToSend = updatedMessages;
       console.log('[DEBUG] onSend called with newMessages. updatedMessages:', updatedMessages);
+      
+      // Check if this is the first user message in a new conversation
+      const userMessages = updatedMessages.filter(msg => msg.user._id === USER._id);
+      isFirstMessage = userMessages.length === 1 && !activeConversationIdRef.current;
+      
+      // Track individual message
+      const sentMessage = newMessages[0];
+      const metadata = analyticsService.getMessageMetadata(sentMessage.text || '');
+      
+      await analyticsService.trackMessageSent({
+        message_type: 'text',
+        message_length: metadata.length,
+        word_count: metadata.word_count,
+        persona_id: currentPersona.id,
+        conversation_position: userMessages.length,
+        is_guest_user: isGuest,
+        has_active_conversation_id: !!activeConversationIdRef.current,
+      });
+
+      // Track conversation started if this is the first message
+      if (isFirstMessage) {
+        await trackConversationStarted(sentMessage.text || '', 'new_chat');
+      }
     } else {
       // Called for initial suggestion: use current messages state
       historyToSend = messagesRef.current;
       console.log('[DEBUG] onSend called with no newMessages. using messages:', messagesRef.current);
+      
+      // Handle initial suggestion auto-send
+      const userMessages = historyToSend.filter(msg => msg.user._id === USER._id);
+      if (userMessages.length > 0) {
+        const firstUserMessage = userMessages[userMessages.length - 1]; // Last in array = first chronologically
+        await trackConversationStarted(firstUserMessage.text || '', 'persona_suggestion');
+      }
     }
 
     const currentConversationId = activeConversationIdRef.current;
@@ -213,7 +265,7 @@ export default function ChatScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isLoading, isGuest, currentPersona]);
+  }, [user, isLoading, isGuest, currentPersona, trackConversationStarted]);
 
   const initialSuggestionSentRef = useRef(false);
 
@@ -371,10 +423,30 @@ export default function ChatScreen() {
     </Animated.View>
   );
 
-  const handleVoiceMessageReady = (transcript: string) => {
+  const handleVoiceMessageReady = async (transcript: string) => {
     console.log('[DEBUG] Voice message ready with transcript:', transcript);
     console.log('[DEBUG] Current messages before voice message:', messages.length);
     console.log('[DEBUG] Current activeConversationId:', activeConversationId);
+    
+    // Track voice message specifically
+    const metadata = analyticsService.getMessageMetadata(transcript);
+    const userMessages = messages.filter(msg => msg.user._id === USER._id);
+    const isFirstMessage = userMessages.length === 0 && !activeConversationId;
+
+    await analyticsService.trackMessageSent({
+      message_type: 'voice',
+      message_length: metadata.length,
+      word_count: metadata.word_count,
+      persona_id: currentPersona.id,
+      conversation_position: userMessages.length + 1,
+      is_guest_user: isGuest,
+      has_active_conversation_id: !!activeConversationId,
+    });
+
+    // Track conversation started if this is the first message
+    if (isFirstMessage) {
+      await trackConversationStarted(transcript, 'voice_initiated');
+    }
     
     // Set the transcript in the input and trigger send
     const userMessage: IMessage = {
@@ -410,6 +482,14 @@ export default function ChatScreen() {
     }).start();
   };
 
+  // Track screen view
+  useEffect(() => {
+    analyticsService.trackScreenView({
+      screen_name: 'chat_screen',
+      is_guest_user: isGuest,
+    });
+  }, [isGuest]);
+
   const renderCustomSend = (props: SendProps<IMessage>) => (
     <VoiceMessageInput
       onVoiceMessageReady={handleVoiceMessageReady}
@@ -417,6 +497,8 @@ export default function ChatScreen() {
       hasText={inputText.trim().length > 0}
       onSendPress={handleSendPress}
       onRecordingStateChange={handleRecordingStateChange}
+      personaId={currentPersona.id}
+      isGuestUser={isGuest}
     />
   );
 

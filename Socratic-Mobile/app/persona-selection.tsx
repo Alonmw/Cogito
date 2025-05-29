@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FlatList, Pressable, StyleSheet, ViewStyle } from 'react-native';
 import { useRouter } from 'expo-router';
 import { personas, PersonaUI } from '@/src/constants/personas';
@@ -7,9 +7,12 @@ import { ThemedText } from '@/src/components/ThemedText';
 import { Colors } from '@/src/constants/Colors';
 import { ThemedCard } from '@/src/components/ThemedCard';
 import { ThemedButton } from '@/src/components/ThemedButton';
+import { analyticsService } from '@/src/services/analytics';
+import { useAuth } from '@/src/context/AuthContext';
 
 const PersonaSelectionScreen: React.FC = () => {
   const router = useRouter();
+  const { isGuest } = useAuth();
   const [selectedPersonaId, setSelectedPersonaId] = React.useState<string | null>(null);
 
   // Themed colors
@@ -24,13 +27,34 @@ const PersonaSelectionScreen: React.FC = () => {
   const primaryActionColor = selectButtonBg;
   const primaryActionTextColor = selectButtonText;
 
-  const handleSelectPersona = (personaId: string, initialUserMessage?: string) => {
+  const handleSelectPersona = async (personaId: string, initialUserMessage?: string) => {
     setSelectedPersonaId(personaId);
+    
+    // Track persona selection
+    const persona = personas.find(p => p.id === personaId);
+    if (persona) {
+      await analyticsService.trackPersonaSelection({
+        persona_id: personaId,
+        persona_name: persona.name,
+        selection_method: initialUserMessage ? 'suggestion_prompt' : 'direct_chat',
+        suggestion_text: initialUserMessage,
+        is_guest_user: isGuest,
+      });
+    }
+    
     router.push({
       pathname: '/(tabs)',
       params: { personaId, ...(initialUserMessage ? { initialUserMessage } : {}) },
     });
   };
+
+  // Track screen view
+  useEffect(() => {
+    analyticsService.trackScreenView({
+      screen_name: 'persona_selection',
+      is_guest_user: isGuest,
+    });
+  }, [isGuest]);
 
   const renderPromptSuggestion = (persona: PersonaUI, suggestion: string) => (
     <ThemedView style={styles.suggestionButtonContainer} key={suggestion}>

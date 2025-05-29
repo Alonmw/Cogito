@@ -29,7 +29,12 @@ config.resolver.nodeModulesPaths = [
     // path.resolve(projectRoot, '../../packages'), // Not strictly needed if root node_modules is correctly resolving workspace links
 ];
 
-// 3. blockList modification removed
+// 3. Add alias resolver configuration for @ path mapping
+config.resolver.alias = {
+    '@': projectRoot,
+};
+
+// 4. blockList modification removed
 // The default blockList from expo/metro-config should be sufficient.
 // If you later need to add custom block patterns, do it carefully:
 // let currentBlockList = config.resolver.blockList;
@@ -38,7 +43,7 @@ config.resolver.nodeModulesPaths = [
 // }
 // config.resolver.blockList = [...currentBlockList, /your_new_pattern_here/];
 
-// 4. Ensure symlinks are handled (often default in newer Metro, but can be explicit)
+// 5. Ensure symlinks are handled (often default in newer Metro, but can be explicit)
 // config.resolver.unstable_enableSymlinks = true; // For newer Metro versions, if issues persist with symlinks
 
 // --- End Monorepo Configuration ---

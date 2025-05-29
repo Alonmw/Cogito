@@ -12,6 +12,9 @@ import { Colors } from '@/src/constants/Colors';
 // --- Import AuthProvider and useAuth hook ---
 import { AuthProvider, useAuth } from '@/src/context/AuthContext'; // Adjust path if needed
 
+// --- Import Analytics ---
+import { analyticsService } from '@/src/services/analytics';
+
 // --- Import Google Sign-In (Keep configuration here) ---
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
@@ -55,6 +58,18 @@ function MainLayout() {
   }, [initializing]);
 
   useEffect(() => {
+    // Initialize analytics when app loads
+    analyticsService.trackAppOpened();
+  }, []);
+
+  useEffect(() => {
+    // Set user properties when auth state changes
+    if (!initializing) {
+      analyticsService.setUserProperties(isGuest, user?.uid);
+    }
+  }, [user, isGuest, initializing]);
+
+  useEffect(() => {
     if (initializing) return; // Do nothing until auth is initialized
 
     const inAppGroup = segments.length > 0 && segments[0] === '(tabs)';
@@ -94,7 +109,6 @@ function MainLayout() {
           headerShown: false,
           contentStyle: { backgroundColor: theme.colors.background }
         }}
-        theme={theme}
       >
         {/* Define all possible screens/layouts */}
         <Stack.Screen name="login" />

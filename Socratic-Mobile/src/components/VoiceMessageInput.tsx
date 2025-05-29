@@ -27,6 +27,7 @@ try {
 import { Colors } from '@/src/constants/Colors';
 import { spacing } from '@/src/constants/spacingAndShadows';
 import apiClient from '@/src/services/api';
+import { analyticsService } from '@/src/services/analytics';
 
 interface VoiceMessageInputProps {
   onVoiceMessageReady: (transcript: string) => void;
@@ -34,6 +35,9 @@ interface VoiceMessageInputProps {
   hasText: boolean;
   onSendPress: () => void;
   onRecordingStateChange?: (isRecording: boolean) => void;
+  // Add these props for analytics
+  personaId: string;
+  isGuestUser: boolean;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -46,6 +50,8 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
   hasText,
   onSendPress,
   onRecordingStateChange,
+  personaId,
+  isGuestUser,
 }) => {
   // State management
   const [isRecording, setIsRecording] = useState(false);
@@ -226,6 +232,13 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
 
+      // Track recording started
+      await analyticsService.trackVoiceInteraction({
+        action: 'recording_started',
+        persona_id: personaId,
+        is_guest_user: isGuestUser,
+      });
+
       // Create recording
       const { recording: newRecording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
@@ -322,12 +335,29 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
         console.log('Recording stopped and stored at', uri);
         setIsProcessingAudio(true);
         
+        // Track recording completed
+        await analyticsService.trackVoiceInteraction({
+          action: 'recording_completed',
+          recording_duration: recordingDuration,
+          persona_id: personaId,
+          is_guest_user: isGuestUser,
+        });
+        
         try {
           // Call the transcription API
           const transcript = await apiClient.transcribeAudio(uri);
           
           if (transcript && transcript.trim()) {
             console.log('✅ Transcription successful:', transcript);
+            
+            // Track successful transcription
+            await analyticsService.trackVoiceInteraction({
+              action: 'transcription_success',
+              transcript_length: transcript.length,
+              persona_id: personaId,
+              is_guest_user: isGuestUser,
+            });
+            
             onVoiceMessageReady(transcript);
           } else {
             console.warn('⚠️ Transcription returned empty or null result');
@@ -338,6 +368,14 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
           }
         } catch (error) {
           console.error('❌ Transcription error:', error);
+          
+          // Track transcription failure
+          await analyticsService.trackVoiceInteraction({
+            action: 'transcription_failed',
+            persona_id: personaId,
+            is_guest_user: isGuestUser,
+          });
+          
           Alert.alert(
             'Transcription Error', 
             'Failed to process the audio recording. Please try again.'
@@ -374,6 +412,15 @@ const VoiceMessageInput: React.FC<VoiceMessageInputProps> = ({
     if (Haptics) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
+
+    // Track cancellation
+    await analyticsService.trackVoiceInteraction({
+      action: 'recording_cancelled',
+      recording_duration: recordingDuration,
+      cancellation_method: 'slide_gesture',
+      persona_id: personaId,
+      is_guest_user: isGuestUser,
+    });
 
     // Get the recording URI before cleanup for file deletion
     let recordingUri: string | null = null;

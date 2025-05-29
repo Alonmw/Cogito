@@ -1,6 +1,6 @@
-# Welcome to your Expo app 👋
+# Socratic Mobile App 🦉
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A React Native mobile app for engaging in philosophical conversations with AI personas like Socrates, Nietzsche, and Kant. Features voice input with slide-to-cancel functionality and anonymous analytics tracking.
 
 ## Get started
 
@@ -24,6 +24,33 @@ In the output, you'll find options to open the app in a
 - [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+
+## Features
+
+- 🎭 **Multiple AI Personas**: Chat with Socrates, Nietzsche, and Kant
+- 🎤 **Voice Input**: Record voice messages with slide-to-cancel functionality
+- 📱 **Cross-Platform**: Runs on iOS, Android, and web
+- 🔐 **Firebase Authentication**: Google Sign-In and guest mode
+- 📊 **Privacy-First Analytics**: Anonymous user interaction tracking
+- 🎨 **Modern UI**: Beautiful interface with persona-specific theming
+
+## Analytics
+
+The app includes comprehensive analytics tracking for user interactions while maintaining complete privacy:
+
+- **Anonymous Data Collection**: All user data is hashed and anonymized
+- **First Message Tracking**: Specifically tracks the first message of every conversation
+- **Voice Interaction Analytics**: Records voice usage patterns without storing audio content
+- **Persona Selection Tracking**: Understands which philosophers users prefer
+
+For production deployment, see `ANALYTICS_SETUP.md` for enabling Firebase Analytics.
+
+## Architecture
+
+This app is part of a pnpm monorepo workspace:
+- `packages/analytics/` - Shared analytics service
+- `packages/api-client/` - API communication layer  
+- `packages/common-types/` - Shared TypeScript types
 
 ## Get a fresh project
 

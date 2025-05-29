@@ -13,8 +13,14 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "NODE_ENV": "production"
+      },
       "android": {
         "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false
       }
     }
   },
