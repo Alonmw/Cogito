@@ -21,7 +21,7 @@ function loadFirebaseAnalytics() {
     }
     return null;
   } catch (error) {
-    console.warn('Firebase Analytics not available:', error.message);
+    console.warn('Firebase Analytics not available:', (error as Error).message);
     return null;
   }
 }

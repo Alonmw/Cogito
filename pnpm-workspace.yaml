@@ -8,5 +8,6 @@ packages:
   - 'Socratic-Web/backend'
   - 'Socratic-Web/frontend-react'
   # Include shared packages (we will create these next)
+  - 'apps/*'
   - 'packages/*'
 
