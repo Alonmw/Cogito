@@ -14,11 +14,27 @@
       },
       "oauth_client": [
         {
+          "client_id": "839078547891-9nm75od5quk2lfc22hu8eo4kh81p0qk2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "io.alonmw.socratic_questioner",
+            "certificate_hash": "af100677ec10b0135afaf0e65bb0f2566968c526"
+          }
+        },
+        {
           "client_id": "839078547891-ctpn6sn09qrh5vilt59nrtu33jr7i9jj.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "io.alonmw.socratic_questioner",
             "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "839078547891-uunrlmgsss7ktjenn89359qcsl3digqb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "io.alonmw.socratic_questioner",
+            "certificate_hash": "342bdca18c7aa24468c9d9c9960843b5d77d4833"
           }
         },
         {
