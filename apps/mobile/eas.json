@@ -22,6 +22,15 @@
       "ios": {
         "simulator": false
       }
+    },
+    "production-aab": {
+      "autoIncrement": true,
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      }
     }
   },
   "submit": {

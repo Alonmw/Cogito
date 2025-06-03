@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "839078547891-05b92celd829d9vfqa23qgj9k1cpf2dq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "io.alonmw.socratic_questioner",
+            "certificate_hash": "1aa3facfc8ce025b3742969da50cfc4c53393840"
+          }
+        },
+        {
           "client_id": "839078547891-9nm75od5quk2lfc22hu8eo4kh81p0qk2.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

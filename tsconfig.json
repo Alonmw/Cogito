@@ -1,4 +1,31 @@
 {
-  "compilerOptions": {},
-  "extends": "expo/tsconfig.base"
+  "compilerOptions": {
+    "target": "es2020",
+    "lib": ["es2020"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "packages/**/*",
+    "apps/web-backend/**/*",
+    "scripts/**/*",
+    "tools/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/node_modules/**/*",
+    "**/dist/**/*",
+    "**/build/**/*",
+    "apps/mobile/**/*",
+    "apps/web-frontend/**/*"
+  ]
 }
