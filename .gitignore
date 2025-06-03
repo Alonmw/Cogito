@@ -56,11 +56,5 @@ apps/mobile/ios/
 *.log
 *.log.*
 
-# Node modules (Uncomment if you add Node.js to frontend later)
-# frontend-web/node_modules/
-
-# Frontend Build artifacts (Uncomment if you add build steps later)
-# frontend-web/dist/
-# frontend-web/build/
-
 # Add any other files or folders you want Git to ignore
+apps/web-backend/prompts/

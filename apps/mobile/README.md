@@ -1,4 +1,4 @@
-# Socratic Mobile App 🦉
+# Cogito 🦉
 
 A React Native mobile app for engaging in philosophical conversations with AI personas like Socrates, Nietzsche, and Kant. Features voice input with slide-to-cancel functionality and anonymous analytics tracking.
 

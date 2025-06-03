@@ -32,7 +32,7 @@ import VoiceMessageInput from '@features/chat/components/VoiceMessageInput';
 
 // Define user objects for Gifted Chat
 const USER: User = { _id: 1, name: 'User' };
-const ASSISTANT: User = { _id: 2, name: 'Socratic Partner' };
+const ASSISTANT: User = { _id: 2, name: 'Cogito' };
 
 export default function ChatScreen() {
   const { user, isGuest } = useAuth();

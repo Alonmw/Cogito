@@ -52,13 +52,23 @@ class Config:
     # --- App Specific ---
     MAX_HISTORY_MSGS = int(os.getenv("MAX_HISTORY_MSGS", "20"))
     MAX_HISTORY_ITEMS = int(os.getenv("MAX_HISTORY_ITEMS", "10"))
-    PROMPT_FILE_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'socrates_prompt.txt')
+    
+    # Use Render secret files - these environment variables are set by Render when secret files are uploaded
+    PROMPT_FILE_PATH = os.getenv('SOCRATES_PROMPT_FILE_PATH')
+    if not PROMPT_FILE_PATH:
+        raise ValueError("No SOCRATES_PROMPT_FILE_PATH set. Please upload socrates_prompt.txt as a secret file in Render.")
 
     PERSONA_PROMPTS_PATHS = {
-        "socrates": os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'socrates_prompt.txt'),
-        "nietzsche": os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'nietzsche_prompt.txt'),
-        "kant": os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'kant_prompt.txt'),
+        "socrates": os.getenv('SOCRATES_PROMPT_FILE_PATH'),
+        "nietzsche": os.getenv('NIETZSCHE_PROMPT_FILE_PATH'), 
+        "kant": os.getenv('KANT_PROMPT_FILE_PATH'),
     }
+    
+    # Validate that all persona prompt files are available
+    for persona, path in PERSONA_PROMPTS_PATHS.items():
+        if not path:
+            raise ValueError(f"No {persona.upper()}_PROMPT_FILE_PATH set. Please upload {persona}_prompt.txt as a secret file in Render.")
+    
     DEFAULT_PERSONA_ID = "socrates"
 
 

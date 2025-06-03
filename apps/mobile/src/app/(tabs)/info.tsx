@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function InfoScreen() {
   const handleContactPress = () => {
     const email = 'alonmor123@gmail.com';
-    const subject = 'Socratic Partner App Feedback';
+    const subject = 'Cogito App Feedback';
     Linking.openURL(`mailto:${email}?subject=${subject}`);
   };
 
@@ -19,14 +19,14 @@ export default function InfoScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         <ThemedText type="title" style={{ textAlign: 'center', marginBottom: 24 }}>
-          About Socratic Partner
+          About Cogito
         </ThemedText>
         <ThemedCard style={{ marginBottom: 20, padding: 18 }}>
           <ThemedText type="subtitle" style={{ marginBottom: 8 }}>
             Our Mission
           </ThemedText>
           <ThemedText>
-            Socratic Partner is designed to be your personal AI companion for exploring thoughts, ideas, and complex topics through the art of questioning. We believe that by engaging in thoughtful dialogue, users can achieve deeper understanding and clarity.
+            Cogito is designed to be your personal AI companion for exploring thoughts, ideas, and complex topics through the art of questioning. We believe that by engaging in thoughtful dialogue, users can achieve deeper understanding and clarity.
           </ThemedText>
         </ThemedCard>
         <ThemedCard style={{ marginBottom: 20, padding: 18 }}>
@@ -35,9 +35,9 @@ export default function InfoScreen() {
           </ThemedText>
           <ThemedText style={{ marginBottom: 4 }}>• Be specific with your initial prompts or questions.</ThemedText>
           <ThemedText style={{ marginBottom: 4 }}>• Reflect on the questions asked before responding.</ThemedText>
-          <ThemedText style={{ marginBottom: 4 }}>• Don\'t be afraid to say "I don\'t know" or to ask for clarification.</ThemedText>
+          <ThemedText style={{ marginBottom: 4 }}>• Don't hesitate to say "I don't know" or to ask for clarification.</ThemedText>
           <ThemedText style={{ marginBottom: 4 }}>• The goal is exploration, not necessarily finding a single "right" answer.</ThemedText>
-          <ThemedText style={{ marginBottom: 4 }}>• Use the "Clear Chat" button to start a fresh line of inquiry.</ThemedText>
+          <ThemedText style={{ marginBottom: 4 }}>• Use the "+"" button to start a fresh line of inquiry with a chosen persona.</ThemedText>
         </ThemedCard>
         <ThemedCard style={{ marginBottom: 20, padding: 18 }}>
           <ThemedText type="subtitle" style={{ marginBottom: 8 }}>
@@ -55,7 +55,7 @@ export default function InfoScreen() {
         </ThemedCard>
         <ThemedView style={{ marginTop: 32, alignItems: 'center' }}>
           <ThemedText type="default" style={{ opacity: 0.7 }}>
-            Socratic Partner v1.0.0
+            Cogito v1.0.0
           </ThemedText>
         </ThemedView>
       </ScrollView>
