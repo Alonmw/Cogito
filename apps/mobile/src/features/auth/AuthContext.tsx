@@ -9,6 +9,7 @@ import React, {
 import { Alert } from 'react-native';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import apiClientInstance from '@shared/api/api';
 
 // Define the shape of the context value
 interface AuthContextType {
@@ -19,10 +20,12 @@ interface AuthContextType {
   isRegistering: boolean;
   isLoggingIn: boolean; // <-- Add email/password login loading state
   isSendingPasswordReset: boolean; // <-- Add reset loading state
+  isDeletingAccount: boolean; // <-- Add account deletion loading state
   signInError: string | null; // Google Sign-In error
   registrationError: string | null;
   emailSignInError: string | null; // <-- Add email/password login error state
   passwordResetError: string | null; // <-- Add reset error state
+  deleteAccountError: string | null; // <-- Add delete account error state
   passwordResetSent: boolean; // <-- Add reset success state
   googleSignIn: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -31,6 +34,7 @@ interface AuthContextType {
   registerWithEmail: (name: string, email: string, password: string) => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>; // <-- Add email sign-in function
   sendPasswordReset: (email: string) => Promise<void>; // <-- Add reset function
+  deleteAccount: () => Promise<boolean>; // <-- Add delete account function
   clearAuthErrors: () => void;
 }
 
@@ -65,10 +69,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false); // <-- Add state
   const [isSendingPasswordReset, setIsSendingPasswordReset] = useState(false); // <-- Add state
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false); // <-- Add state
   const [signInError, setSignInError] = useState<string | null>(null);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
   const [emailSignInError, setEmailSignInError] = useState<string | null>(null); // <-- Add state
   const [passwordResetError, setPasswordResetError] = useState<string | null>(null); // <-- Add state
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null); // <-- Add state
   const [passwordResetSent, setPasswordResetSent] = useState(false); // <-- Add state
 
   // Auth state listener
@@ -83,6 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsRegistering(false);
       setIsLoggingIn(false); // <-- Reset state
       setIsSendingPasswordReset(false); // <-- Reset state
+      setIsDeletingAccount(false); // <-- Reset delete account state
       clearAuthErrors();
       setPasswordResetSent(false); // <-- Reset state
       if (initializing) setInitializing(false);
@@ -95,6 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setRegistrationError(null);
       setEmailSignInError(null); // <-- Clear state
       setPasswordResetError(null); // <-- Clear state
+      setDeleteAccountError(null); // <-- Clear state
   };
 
   const googleSignIn = async () => {
@@ -207,6 +215,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
   // --- End Password Reset ---
 
+  // --- Add Delete Account Function for Mobile ---
+  const deleteAccount = async (): Promise<boolean> => {
+      setIsDeletingAccount(true);
+      setDeleteAccountError(null);
+      try {
+          const currentUser = auth().currentUser;
+          if (!currentUser) {
+              throw new Error('No user is currently logged in.');
+          }
+
+          // Get Firebase ID token
+          const idToken = await currentUser.getIdToken(true);
+          
+          // Determine base URL the same way as in api.ts
+          const isDevelopment = __DEV__;
+          const baseUrl = isDevelopment
+              ? (process.env.EXPO_PUBLIC_STAGING_BACKEND_URL || 'https://socratic-questioner-dev.onrender.com')
+              : (process.env.EXPO_PUBLIC_PRODUCTION_BACKEND_URL || 'https://socratic-questioner.onrender.com');
+          
+          // Call backend API to delete account
+          const response = await fetch(`${baseUrl}/auth/delete_account`, {
+              method: 'DELETE',
+              headers: {
+                  'Authorization': `Bearer ${idToken}`,
+                  'Content-Type': 'application/json',
+              },
+          });
+
+          if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Failed to delete account');
+          }
+
+          console.log('[AUTH Context] Account deleted successfully from backend');
+          
+          // Sign out the user after successful deletion
+          await signOut();
+          
+          return true;
+      } catch (error: unknown) {
+          console.error('[AUTH Context ERROR] Delete Account Error:', error);
+          let errorMsg = 'An unexpected error occurred while deleting your account.';
+          if (error instanceof Error) {
+              errorMsg = error.message;
+          }
+          setDeleteAccountError(errorMsg);
+          return false;
+      } finally {
+          setIsDeletingAccount(false);
+      }
+  };
+  // --- End Delete Account ---
 
   // Updated Sign Out Function
   const signOut = async () => { /* ... (same as before) ... */
@@ -244,10 +304,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isRegistering,
     isLoggingIn, // <-- Provide
     isSendingPasswordReset, // <-- Provide
+    isDeletingAccount, // <-- Provide
     signInError,
     registrationError,
     emailSignInError, // <-- Provide
     passwordResetError, // <-- Provide
+    deleteAccountError, // <-- Provide
     passwordResetSent, // <-- Provide
     googleSignIn,
     signOut,
@@ -256,6 +318,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     registerWithEmail,
     signInWithEmail, // <-- Provide
     sendPasswordReset, // <-- Provide
+    deleteAccount, // <-- Provide
     clearAuthErrors,
   };
 

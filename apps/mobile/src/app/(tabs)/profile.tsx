@@ -8,9 +8,11 @@ import { ThemedView } from '@shared/components/ThemedView';
 import { ThemedText } from '@shared/components/ThemedText';
 import { ThemedButton } from '@shared/components/ThemedButton';
 import { ThemedCard } from '@shared/components/ThemedCard';
+import { useRouter } from 'expo-router';
 
 export default function ProfileScreen() {
-  const { user, signOut, isGuest, exitGuestMode } = useAuth();
+  const { user, signOut, isGuest, exitGuestMode, deleteAccount, isDeletingAccount, deleteAccountError } = useAuth();
+  const router = useRouter();
 
   const handleLogout = () => {
     Alert.alert(
@@ -19,6 +21,44 @@ export default function ProfileScreen() {
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Logout', style: 'destructive', onPress: signOut },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to permanently delete your account? This action cannot be undone and will remove all your data.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete Account', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              const success = await deleteAccount();
+              if (success) {
+                Alert.alert(
+                  'Account Deleted', 
+                  'Your account has been permanently deleted.',
+                  [
+                    { 
+                      text: 'OK', 
+                      onPress: () => {
+                        // Navigate to login screen
+                        router.replace('/login');
+                      }
+                    }
+                  ]
+                );
+              } else if (deleteAccountError) {
+                Alert.alert('Deletion Failed', deleteAccountError);
+              }
+            } catch (error) {
+              Alert.alert('Error', 'An unexpected error occurred while deleting your account.');
+            }
+          }
+        },
       ]
     );
   };
@@ -44,6 +84,17 @@ export default function ProfileScreen() {
               onPress={handleLogout}
               variant="primary"
               style={{ marginTop: 10 }}
+            />
+            <ThemedButton
+              title={isDeletingAccount ? "Deleting Account..." : "Delete Account"}
+              onPress={handleDeleteAccount}
+              variant="primary"
+              style={{ 
+                marginTop: 15, 
+                backgroundColor: isDeletingAccount ? '#999' : '#dc3545',
+                opacity: isDeletingAccount ? 0.7 : 1
+              }}
+              disabled={isDeletingAccount}
             />
           </ThemedCard>
         ) : isGuest ? (
