@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "CogitoTest",
+    "name": "Cogito",
     "slug": "Socratic-Mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -26,7 +26,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./src/shared/assets/images/owl-logo-2prod.png"
+      "favicon": "./src/shared/assets/images/owl-logo-prod.png"
     },
     "plugins": [
       "expo-router",
