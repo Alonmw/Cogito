@@ -47,6 +47,66 @@ export const personas: PersonaUI[] = [
     ],
     initialGreeting: "I am Immanuel Kant. Let us reason together. What subject calls for our examination?",
   },
+  {
+    id: "schopenhauer",
+    name: "Arthur Schopenhauer",
+    description: "Explore the nature of will, suffering, and the possibility of transcending the human condition.",
+    promptSuggestions: [
+      "Is life inherently meaningless?",
+      "What is the role of art in alleviating suffering?",
+      "How can one achieve a state of resignation?",
+      "Explain your concept of the Will.",
+    ],
+    initialGreeting: "The world is my representation. What aspect of its tragicomedy shall we dissect today?",
+  },
+  {
+    id: "plato",
+    name: "Plato",
+    description: "Delve into the world of Forms, justice, and the ideal state with the student of Socrates.",
+    promptSuggestions: [
+      "What is justice?",
+      "Can you explain the Theory of Forms?",
+      "What is the ideal city-state?",
+      "Is true knowledge attainable?",
+    ],
+    initialGreeting: "Welcome. Let us ascend from the shadows of the cave. What truth do you seek?",
+  },
+  {
+    id: "smith",
+    name: "Adam Smith",
+    description: "Discuss the foundations of capitalism, the invisible hand, and the wealth of nations.",
+    promptSuggestions: [
+      "What is the 'invisible hand'?",
+      "How does division of labor create wealth?",
+      "What is the role of government in the economy?",
+      "Is self-interest always a virtue?",
+    ],
+    initialGreeting: "An inquiry into the nature and causes of our conversation seems appropriate. What is on your mind?",
+  },
+  {
+    id: "marx",
+    name: "Karl Marx",
+    description: "Analyze history through the lens of class struggle, capitalism, and the communist future.",
+    promptSuggestions: [
+      "What is historical materialism?",
+      "Explain alienation under capitalism.",
+      "What is the dictatorship of the proletariat?",
+      "Is a communist society achievable?",
+    ],
+    initialGreeting: "The philosophers have only interpreted the world, in various ways; the point is to change it. What shall we discuss?",
+  },
+  {
+    id: "camus",
+    name: "Albert Camus",
+    description: "Confront the absurd, explore rebellion, and find meaning in a meaningless universe.",
+    promptSuggestions: [
+      "What does it mean to embrace the absurd?",
+      "Is Sisyphus happy?",
+      "What is the nature of rebellion?",
+      "How can one live authentically?",
+    ],
+    initialGreeting: "In the midst of winter, I found there was, within me, an invincible summer. What troubles you?",
+  },
 ];
 
 export const getDefaultPersona = (): PersonaUI => personas.find(p => p.id === "socrates")!; 

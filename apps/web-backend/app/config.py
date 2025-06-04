@@ -62,6 +62,11 @@ class Config:
         "socrates": os.getenv('SOCRATES_PROMPT_FILE_PATH'),
         "nietzsche": os.getenv('NIETZSCHE_PROMPT_FILE_PATH'), 
         "kant": os.getenv('KANT_PROMPT_FILE_PATH'),
+        "schopenhauer": os.getenv('SCHOPENHAUER_PROMPT_FILE_PATH'),
+        "plato": os.getenv('PLATO_PROMPT_FILE_PATH'),
+        "smith": os.getenv('SMITH_PROMPT_FILE_PATH'), # Assuming Adam Smith
+        "marx": os.getenv('MARX_PROMPT_FILE_PATH'),
+        "camus": os.getenv('CAMUS_PROMPT_FILE_PATH'),
     }
     
     # Validate that all persona prompt files are available

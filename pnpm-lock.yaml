@@ -17,7 +17,13 @@ importers:
       react-native:
         specifier: 0.76.9
         version: 0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@18.3.1)
+      react-native-swiper:
+        specifier: ^1.6.0
+        version: 1.6.0
     devDependencies:
+      '@types/react-native-swiper':
+        specifier: ^1.5.12
+        version: 1.5.12
       typescript:
         specifier: ^5.3.3
         version: 5.7.3
@@ -2354,6 +2360,10 @@ packages:
     resolution: {integrity: sha512-CMCjrWucUBZvohgZxkjd6S9h0nZxXjzus6yDfUb+xLxYM7VvjKNH1tQrE9GWLql1XoOP4/Ds3bwFqShHUYraGg==}
     peerDependencies:
       '@types/react': ^19.0.0
+
+  '@types/react-native-swiper@1.5.12':
+    resolution: {integrity: sha512-xFNvc/tAnrBTC1lTDh/upedd9GtEsmIR/RNAAprQGk5AU0CngifI1nlEqnMdKagbBoCmXErcySG7bVXwPXEFnA==}
+    deprecated: This is a stub types definition. react-native-swiper provides its own type definitions, so you do not need this installed.
 
   '@types/react-test-renderer@18.3.1':
     resolution: {integrity: sha512-vAhnk0tG2eGa37lkU9+s5SoroCsRI08xnsWFiAXOuPH2jqzMbcXvKExXViPi1P5fIklDeCvXqyrdmipFaSkZrA==}
@@ -5095,6 +5105,9 @@ packages:
       react: '>=0.14.8'
       react-native: '>=0.23.1'
 
+  react-native-swiper@1.6.0:
+    resolution: {integrity: sha512-OnkTTZi+9uZUgy0uz1I9oYDhCU3z36lZn+LFsk9FXPRelxb/KeABzvPs3r3SrHWy1aA67KGtSFj0xNK2QD0NJQ==}
+
   react-native-web@0.19.13:
     resolution: {integrity: sha512-etv3bN8rJglrRCp/uL4p7l8QvUNUC++QwDbdZ8CB7BvZiMvsxfFIRM1j04vxNldG3uo2puRd6OSWR3ibtmc29A==}
     peerDependencies:
@@ -7346,9 +7359,9 @@ snapshots:
       react: 18.3.1
       react-native: 0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@18.3.1)
 
-  '@expo/vector-icons@14.1.0(expo-font@13.0.4(expo@52.0.46(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0)))(react-native-webview@13.12.5(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0))(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0))(react@19.1.0))(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0)':
+  '@expo/vector-icons@14.1.0(expo-font@13.0.4(expo@52.0.46(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@18.3.1)))(react-native-webview@13.12.5(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@18.3.1))(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0)':
     dependencies:
-      expo-font: 13.0.4(expo@52.0.46(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0)))(react-native-webview@13.12.5(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0))(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0))(react@19.1.0)
+      expo-font: 13.0.4(expo@52.0.46(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@18.3.1)))(react-native-webview@13.12.5(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@18.3.1))(react@18.3.1))(react@18.3.1)
       react: 19.1.0
       react-native: 0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0)
     optional: true
@@ -8812,6 +8825,10 @@ snapshots:
     dependencies:
       '@types/react': 19.1.6
 
+  '@types/react-native-swiper@1.5.12':
+    dependencies:
+      react-native-swiper: 1.6.0
+
   '@types/react-test-renderer@18.3.1':
     dependencies:
       '@types/react': 18.3.23
@@ -10197,7 +10214,7 @@ snapshots:
       '@expo/config-plugins': 9.0.17
       '@expo/fingerprint': 0.11.11
       '@expo/metro-config': 0.19.12
-      '@expo/vector-icons': 14.1.0(expo-font@13.0.4(expo@52.0.46(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0)))(react-native-webview@13.12.5(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0))(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0))(react@19.1.0))(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0)
+      '@expo/vector-icons': 14.1.0(expo-font@13.0.4(expo@52.0.46(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@18.3.1)))(react-native-webview@13.12.5(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@18.3.1))(react@18.3.1))(react@18.3.1))(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0)
       babel-preset-expo: 12.0.11(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))
       expo-asset: 11.0.5(expo@52.0.46(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0)))(react-native-webview@13.12.5(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0))(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0))(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0)
       expo-constants: 17.0.8(expo@52.0.46(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@expo/metro-runtime@4.0.1(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0)))(react-native-webview@13.12.5(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0))(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))(react@19.1.0))(react-native@0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@19.1.0))
@@ -12161,6 +12178,10 @@ snapshots:
       prop-types: 15.8.1
       react: 18.3.1
       react-native: 0.76.9(@babel/core@7.27.4)(@babel/preset-env@7.27.2(@babel/core@7.27.4))(@types/react@18.3.23)(react@18.3.1)
+
+  react-native-swiper@1.6.0:
+    dependencies:
+      prop-types: 15.8.1
 
   react-native-web@0.19.13(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:

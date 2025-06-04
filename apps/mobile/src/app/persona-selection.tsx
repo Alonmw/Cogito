@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
-import { FlatList, Pressable, StyleSheet, ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, ViewStyle, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
+import Swiper from 'react-native-swiper';
 import { personas, PersonaUI } from '@shared/constants/personas';
 import { ThemedView } from '@shared/components/ThemedView';
 import { ThemedText } from '@shared/components/ThemedText';
@@ -10,10 +11,11 @@ import { ThemedButton } from '@shared/components/ThemedButton';
 import { analyticsService } from '@shared/api/analytics';
 import { useAuth } from '@features/auth/AuthContext';
 
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
 const PersonaSelectionScreen: React.FC = () => {
   const router = useRouter();
   const { isGuest } = useAuth();
-  const [selectedPersonaId, setSelectedPersonaId] = React.useState<string | null>(null);
 
   // Themed colors
   const cardBackground = Colors.background;
@@ -28,8 +30,6 @@ const PersonaSelectionScreen: React.FC = () => {
   const primaryActionTextColor = selectButtonText;
 
   const handleSelectPersona = async (personaId: string, initialUserMessage?: string) => {
-    setSelectedPersonaId(personaId);
-    
     // Track persona selection
     const persona = personas.find(p => p.id === personaId);
     if (persona) {
@@ -76,75 +76,104 @@ const PersonaSelectionScreen: React.FC = () => {
     </ThemedView>
   );
 
-  const renderPersonaCard = ({ item }: { item: PersonaUI }) => {
-    const isSelected = selectedPersonaId === item.id;
-    const cardStyle = StyleSheet.flatten([
-      styles.card,
-      isSelected ? { borderColor: primaryActionColor, borderWidth: 2, backgroundColor: '#f7f3e8' } : undefined,
-    ]);
+  const renderPersonaCard = (item: PersonaUI) => {
     return (
-      <ThemedCard
-        style={cardStyle}
-        onPress={() => { setSelectedPersonaId(item.id); }}
-        shadowVariant="medium"
-      >
-        <ThemedText type="title" style={styles.personaName}>{item.name}</ThemedText>
-        <ThemedText type="subtitle" style={styles.personaDescription}>{item.description}</ThemedText>
-        <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>Try asking:</ThemedText>
-        <ThemedView style={styles.suggestionsRow}>
-          {item.promptSuggestions.map(suggestion => renderPromptSuggestion(item, suggestion))}
-        </ThemedView>
-        <ThemedButton
-          title={`Chat as ${item.name}`}
-          onPress={() => handleSelectPersona(item.id)}
-          variant="primary"
-          size="large"
-          style={{
-            ...styles.selectButton,
-            backgroundColor: primaryActionColor,
-          }}
-          textStyle={{
-            ...styles.selectButtonText,
-            color: primaryActionTextColor,
-          }}
-        />
-        {isSelected && (
-          <ThemedText style={styles.selectedLabel} accessibilityLabel="Selected persona">Selected</ThemedText>
-        )}
-      </ThemedCard>
+      <ThemedView style={styles.slideContainer}>
+        <ThemedCard
+          style={styles.card}
+          shadowVariant="medium"
+        >
+          <ThemedText type="title" style={styles.personaName}>{item.name}</ThemedText>
+          <ThemedText type="subtitle" style={styles.personaDescription}>{item.description}</ThemedText>
+          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>Try asking:</ThemedText>
+          <ThemedView style={styles.suggestionsRow}>
+            {item.promptSuggestions.map(suggestion => renderPromptSuggestion(item, suggestion))}
+          </ThemedView>
+          <ThemedButton
+            title={`Chat as ${item.name}`}
+            onPress={() => handleSelectPersona(item.id)}
+            variant="primary"
+            size="large"
+            style={{
+              ...styles.selectButton,
+              backgroundColor: primaryActionColor,
+            }}
+            textStyle={{
+              ...styles.selectButtonText,
+              color: primaryActionTextColor,
+            }}
+          />
+        </ThemedCard>
+      </ThemedView>
     );
   };
 
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="title" style={styles.header}>Choose a Persona</ThemedText>
-      <FlatList
-        data={personas}
-        renderItem={renderPersonaCard}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-      />
+      <Swiper
+        style={styles.wrapper}
+        showsButtons={false}
+        showsPagination={true}
+        dot={<ThemedView style={styles.dot} />}
+        activeDot={<ThemedView style={[styles.dot, styles.activeDot]} />}
+        paginationStyle={styles.pagination}
+        loop={false}
+        index={0}
+      >
+        {personas.map((persona) => renderPersonaCard(persona))}
+      </Swiper>
     </ThemedView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 40 },
-  header: { fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
-  listContent: { paddingHorizontal: 16, paddingBottom: 32 },
+  container: { 
+    flex: 1, 
+    paddingTop: 40 
+  },
+  header: { 
+    fontWeight: 'bold', 
+    textAlign: 'center', 
+    marginBottom: 20,
+    paddingHorizontal: 16,
+  },
+  wrapper: {},
+  slideContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
   card: {
     borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
+    padding: 24,
+    minHeight: screenHeight * 0.6,
+    justifyContent: 'space-between',
   },
-  personaName: { marginBottom: 6 },
-  personaDescription: { marginBottom: 12 },
-  sectionTitle: { marginBottom: 6 },
+  personaName: { 
+    marginBottom: 12,
+    textAlign: 'center',
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  personaDescription: { 
+    marginBottom: 20,
+    textAlign: 'center',
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  sectionTitle: { 
+    marginBottom: 12,
+    textAlign: 'center',
+    fontSize: 18,
+  },
   suggestionsRow: { 
     flexDirection: 'row', 
     flexWrap: 'wrap', 
+    justifyContent: 'center',
     marginHorizontal: -4,
-    marginBottom: 12 
+    marginBottom: 24,
   },
   suggestionButtonContainer: {
     margin: 4,
@@ -155,10 +184,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     height: 'auto',
-    minHeight: 44,
+    minHeight: 48,
     width: '100%',
   },
   suggestionText: {
@@ -168,18 +197,34 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   selectButton: {
-    borderRadius: 8,
-    paddingVertical: 10,
-    marginTop: 8,
+    borderRadius: 12,
+    paddingVertical: 16,
+    marginTop: 20,
     alignItems: 'center',
+    alignSelf: 'stretch',
   },
-  selectButtonText: { fontWeight: 'bold', fontSize: 16 },
-  selectedLabel: {
-    marginTop: 8,
-    color: '#0a7ea4',
-    fontWeight: 'bold',
-    textAlign: 'right',
-    fontSize: 13,
+  selectButtonText: { 
+    fontWeight: 'bold', 
+    fontSize: 18,
+  },
+  pagination: {
+    bottom: 30,
+  },
+  dot: {
+    backgroundColor: Colors.tabIconDefault,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginLeft: 3,
+    marginRight: 3,
+    marginTop: 3,
+    marginBottom: 3,
+  },
+  activeDot: {
+    backgroundColor: '#6366f1',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
 });
 
