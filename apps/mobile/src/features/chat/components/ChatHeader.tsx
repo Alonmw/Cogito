@@ -57,7 +57,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 
   return (
     <ThemedView style={[styles.container, { backgroundColor: Colors.background, borderBottomColor: Colors.tabIconDefault }]}>
-      <ThemedText type="title" style={styles.title}>{personaName || 'Socratic Partner'}</ThemedText>
+      <ThemedText type="title" style={styles.title}>{personaName || 'Cogito'}</ThemedText>
       
       <View style={styles.buttonsContainer}>
         <Pressable

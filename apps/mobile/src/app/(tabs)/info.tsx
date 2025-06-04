@@ -44,7 +44,7 @@ export default function InfoScreen() {
             Contact Us
           </ThemedText>
           <ThemedText style={{ marginBottom: 12 }}>
-            Have feedback, a bug report, a feature request, or just a question? We\'d love to hear from you!
+            Have feedback, a bug report, a feature request, or just a question? We'd love to hear from you!
           </ThemedText>
           <ThemedButton
             title="Contact Developer"

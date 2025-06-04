@@ -239,7 +239,7 @@ export default function HistoryScreen() {
         const conversation = history.find(conv => conv.id === conversationId);
         const title = conversation?.title || 'Untitled Conversation';
         const personaDetail = personas.find(p => p.id === conversation?.persona_id);
-        const personaName = personaDetail?.name || 'Socratic Partner';
+        const personaName = personaDetail?.name || 'Cogito';
         
         const chatContent = fetchedMessages
           .map(msg => `${msg.role === 'user' ? 'User' : personaName}: ${msg.content}`)

@@ -1,4 +1,4 @@
-# Socratic Project
+# Cogito
 
 A cross-platform philosophical dialogue application featuring AI-powered conversations with historical philosophical personas.
 
