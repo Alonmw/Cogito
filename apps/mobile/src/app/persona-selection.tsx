@@ -76,38 +76,6 @@ const PersonaSelectionScreen: React.FC = () => {
     </ThemedView>
   );
 
-  const renderPersonaCard = (item: PersonaUI) => {
-    return (
-      <ThemedView style={styles.slideContainer}>
-        <ThemedCard
-          style={styles.card}
-          shadowVariant="medium"
-        >
-          <ThemedText type="title" style={styles.personaName}>{item.name}</ThemedText>
-          <ThemedText type="subtitle" style={styles.personaDescription}>{item.description}</ThemedText>
-          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>Try asking:</ThemedText>
-          <ThemedView style={styles.suggestionsRow}>
-            {item.promptSuggestions.map(suggestion => renderPromptSuggestion(item, suggestion))}
-          </ThemedView>
-          <ThemedButton
-            title={`Chat as ${item.name}`}
-            onPress={() => handleSelectPersona(item.id)}
-            variant="primary"
-            size="large"
-            style={{
-              ...styles.selectButton,
-              backgroundColor: primaryActionColor,
-            }}
-            textStyle={{
-              ...styles.selectButtonText,
-              color: primaryActionTextColor,
-            }}
-          />
-        </ThemedCard>
-      </ThemedView>
-    );
-  };
-
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="title" style={styles.header}>Choose a Persona</ThemedText>
@@ -121,7 +89,35 @@ const PersonaSelectionScreen: React.FC = () => {
         loop={false}
         index={0}
       >
-        {personas.map((persona) => renderPersonaCard(persona))}
+        {personas.map((persona) => (
+          <ThemedView key={persona.id} style={styles.slideContainer}>
+            <ThemedCard
+              style={styles.card}
+              shadowVariant="medium"
+            >
+              <ThemedText type="title" style={styles.personaName}>{persona.name}</ThemedText>
+              <ThemedText type="subtitle" style={styles.personaDescription}>{persona.description}</ThemedText>
+              <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>Try asking:</ThemedText>
+              <ThemedView style={styles.suggestionsRow}>
+                {persona.promptSuggestions.map(suggestion => renderPromptSuggestion(persona, suggestion))}
+              </ThemedView>
+              <ThemedButton
+                title={`Chat as ${persona.name}`}
+                onPress={() => handleSelectPersona(persona.id)}
+                variant="primary"
+                size="large"
+                style={{
+                  ...styles.selectButton,
+                  backgroundColor: primaryActionColor,
+                }}
+                textStyle={{
+                  ...styles.selectButtonText,
+                  color: primaryActionTextColor,
+                }}
+              />
+            </ThemedCard>
+          </ThemedView>
+        ))}
       </Swiper>
     </ThemedView>
   );
