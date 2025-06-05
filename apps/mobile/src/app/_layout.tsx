@@ -4,10 +4,12 @@ import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router'; // Import useRouter, useSegments
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Colors } from '@shared/constants/Colors';
+import { hasCompletedIntroduction } from '@shared/utils/onboardingUtils';
+import { useFocusEffect } from '@react-navigation/native';
 
 // --- Import AuthProvider and useAuth hook ---
 import { AuthProvider, useAuth } from '@features/auth/AuthContext'; // Adjust path if needed
@@ -49,13 +51,38 @@ function MainLayout() {
   // --- End Change ---
   const router = useRouter(); // Hook for navigation
   const segments = useSegments(); // Hook to get current route segments
+  const [introductionCompleted, setIntroductionCompleted] = useState<boolean | null>(null);
+  const introductionCompletedRef = useRef<boolean | null>(null);
+
+  // Function to refresh introduction status
+  const refreshIntroductionStatus = useCallback(async () => {
+    try {
+      const completed = await hasCompletedIntroduction();
+      console.log('[ROUTER] refreshIntroductionStatus() - AsyncStorage value:', completed, 'current state:', introductionCompleted);
+      setIntroductionCompleted(completed);
+      introductionCompletedRef.current = completed;
+      return completed;
+    } catch (error) {
+      console.error('Error checking introduction status:', error);
+      setIntroductionCompleted(false); // Default to false on error
+      introductionCompletedRef.current = false;
+      return false;
+    }
+  }, [introductionCompleted]);
+
+  // Check if user has completed introduction
+  useEffect(() => {
+    if (!initializing) {
+      refreshIntroductionStatus();
+    }
+  }, [initializing, refreshIntroductionStatus]);
 
   useEffect(() => {
-    // Hide splash screen once fonts are loaded AND auth is initialized
-    if (!initializing) {
+    // Hide splash screen once fonts are loaded AND auth is initialized AND introduction status is checked
+    if (!initializing && introductionCompleted !== null) {
       SplashScreen.hideAsync();
     }
-  }, [initializing]);
+  }, [initializing, introductionCompleted]);
 
   useEffect(() => {
     // Initialize analytics when app loads
@@ -69,34 +96,60 @@ function MainLayout() {
     }
   }, [user, isGuest, initializing]);
 
+  // Proactively refresh introduction status when segments change to persona-selection
   useEffect(() => {
-    if (initializing) return; // Do nothing until auth is initialized
+    const currentSegment = segments[0];
+    if (currentSegment === 'persona-selection') {
+      console.log('[ROUTER] Navigated to persona-selection, proactively refreshing introduction status...');
+      // Refresh immediately without delay
+      const refreshAndLog = async () => {
+        const newStatus = await refreshIntroductionStatus();
+        console.log('[ROUTER] Proactive refresh completed, new status:', newStatus);
+      };
+      refreshAndLog();
+    }
+  }, [segments, refreshIntroductionStatus]);
+
+  useEffect(() => {
+    if (initializing || introductionCompleted === null) return; // Do nothing until auth and introduction status are initialized
 
     const inAppGroup = segments.length > 0 && segments[0] === '(tabs)';
     const onLoginScreen = segments.length > 0 && segments[0] === 'login';
     const onPersonaSelectionScreen = segments.length > 0 && segments[0] === 'persona-selection';
+    const onOnboardingScreen = segments.length > 0 && segments[0] === 'onboarding';
 
-    // --- Updated Routing Logic for Persona Selection ---
-    const canAccessApp = user || isGuest; // User can access main app if logged in OR is guest
+    // Use ref value if available for more up-to-date status
+    const currentIntroStatus = introductionCompletedRef.current !== null ? introductionCompletedRef.current : introductionCompleted;
 
-    if (canAccessApp) {
-      if (!inAppGroup && !onPersonaSelectionScreen) {
-        // If authenticated/guest but not in tabs or persona selection, go to persona selection
-        console.log('[ROUTER] User/Guest authenticated, navigating to persona-selection');
-        router.replace('/persona-selection');
-      }
-    } else if (!onLoginScreen) {
-      // User is not logged in AND not a guest, and not on the login screen -> redirect to login
-      console.log('[ROUTER] User signed out/not guest, redirecting to /login');
-      router.replace('/login');
+    console.log('[ROUTER] Current segment:', segments[0], 'introductionCompleted:', introductionCompleted, 'introductionCompletedRef:', introductionCompletedRef.current, 'using:', currentIntroStatus, 'user:', !!user, 'isGuest:', isGuest);
+
+    // --- PRIORITY 1: Onboarding for first-time users (regardless of auth status) ---
+    if (!currentIntroStatus && !onOnboardingScreen) {
+      console.log('[ROUTER] First time user, navigating to onboarding');
+      router.replace('/onboarding');
+      return;
     }
-    // --- End Updated Routing Logic ---
 
-  }, [user, isGuest, initializing, segments, router]); // Add isGuest to dependencies
+    // --- PRIORITY 2: Persona selection for users who completed onboarding (regardless of auth status) ---
+    if (currentIntroStatus && !onPersonaSelectionScreen && !inAppGroup && !onLoginScreen && !onOnboardingScreen) {
+      console.log('[ROUTER] User completed onboarding, navigating to persona-selection');
+        router.replace('/persona-selection');
+      return;
+    }
 
+    // --- PRIORITY 3: Authentication for users on persona-selection without auth (only if they try to access main app) ---
+    const canAccessApp = user || isGuest;
+    if (currentIntroStatus && inAppGroup && !canAccessApp) {
+      // User completed onboarding, is trying to access main app, but not authenticated -> redirect to login
+      console.log('[ROUTER] User trying to access main app without authentication, redirecting to /login');
+      router.replace('/login');
+      return;
+    }
+
+  }, [user, isGuest, initializing, segments, router, introductionCompleted]);
 
   // Show nothing while initializing (splash screen is visible)
-  if (initializing) {
+  if (initializing || introductionCompleted === null) {
     return null;
   }
 
@@ -112,6 +165,7 @@ function MainLayout() {
       >
         {/* Define all possible screens/layouts */}
         <Stack.Screen name="login" />
+        <Stack.Screen name="onboarding" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="persona-selection" />
         <Stack.Screen name="+not-found" />
