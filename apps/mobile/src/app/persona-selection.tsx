@@ -15,7 +15,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const PersonaSelectionScreen: React.FC = () => {
   const router = useRouter();
-  const { isGuest } = useAuth();
+  const { isGuest, user, continueAsGuest } = useAuth();
 
   // Themed colors
   const cardBackground = Colors.background;
@@ -30,6 +30,14 @@ const PersonaSelectionScreen: React.FC = () => {
   const primaryActionTextColor = selectButtonText;
 
   const handleSelectPersona = async (personaId: string, initialUserMessage?: string) => {
+    // If user is not authenticated, automatically continue as guest
+    if (!user && !isGuest) {
+      console.log('[PERSONA_SELECTION] User not authenticated, setting guest mode before navigation');
+      continueAsGuest();
+      // Small delay to ensure auth state is updated before navigation
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
     // Track persona selection
     const persona = personas.find(p => p.id === personaId);
     if (persona) {
@@ -38,7 +46,7 @@ const PersonaSelectionScreen: React.FC = () => {
         persona_name: persona.name,
         selection_method: initialUserMessage ? 'suggestion_prompt' : 'direct_chat',
         suggestion_text: initialUserMessage,
-        is_guest_user: isGuest,
+        is_guest_user: !user, // Will be true after continueAsGuest() is called
       });
     }
     

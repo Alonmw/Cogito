@@ -11,6 +11,7 @@ import { ThemedCard } from '@shared/components/ThemedCard';
 import { ThemedView } from '@shared/components/ThemedView';
 import { ThemedText } from '@shared/components/ThemedText';
 import { RandomQuote } from '@shared/components/RandomQuote';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 const googleLogoUri = 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png';
 
@@ -31,8 +32,12 @@ export default function LoginScreen() {
     passwordResetError,
     passwordResetSent,
     clearAuthErrors,
+    user,
+    isGuest,
   } = useAuth();
 
+  const router = useRouter();
+  const params = useLocalSearchParams();
   const [isLoginView, setIsLoginView] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -42,6 +47,37 @@ export default function LoginScreen() {
   const googleButtonBackgroundColor = '#F0F0F0';
   const googleButtonBorderColor = Colors.tabIconDefault;
   const actionButtonTextColor = '#FFFFFF';
+
+  // Handle redirect after successful authentication
+  useEffect(() => {
+    if (user || isGuest) {
+      // User is now authenticated, check for redirect parameters
+      const redirectPersonaId = params.redirectPersonaId as string;
+      const redirectInitialUserMessage = params.redirectInitialUserMessage as string;
+      const redirectConversationId = params.redirectConversationId as string;
+
+      if (redirectPersonaId || redirectInitialUserMessage || redirectConversationId) {
+        console.log('[LOGIN] User authenticated, redirecting to chat with params:', { 
+          redirectPersonaId, 
+          redirectInitialUserMessage, 
+          redirectConversationId 
+        });
+        
+        // Build the redirect parameters
+        const redirectParams: any = {};
+        if (redirectPersonaId) redirectParams.personaId = redirectPersonaId;
+        if (redirectInitialUserMessage) redirectParams.initialUserMessage = redirectInitialUserMessage;
+        if (redirectConversationId) redirectParams.conversationId = redirectConversationId;
+        
+        // Navigate to the chat with the original parameters
+        router.replace({ pathname: '/(tabs)', params: redirectParams });
+      } else {
+        // No redirect parameters, go to persona selection
+        console.log('[LOGIN] User authenticated, no redirect params, going to persona selection');
+        router.replace('/persona-selection');
+      }
+    }
+  }, [user, isGuest, params, router]);
 
   const handleRegister = () => {
       if (!name.trim() || !email.trim() || !password.trim()) {
