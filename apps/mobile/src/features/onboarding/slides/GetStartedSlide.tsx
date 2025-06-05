@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet, Dimensions, Image } from 'react-native';
 import { ThemedView } from '@shared/components/ThemedView';
 import { ThemedText } from '@shared/components/ThemedText';
 import { ThemedButton } from '@shared/components/ThemedButton';
@@ -17,50 +17,28 @@ export default function GetStartedSlide({ onGetStarted, isLoading = false }: Get
   return (
     <ThemedView style={styles.container}>
       <ThemedView style={styles.content}>
+        <ThemedView style={styles.logoContainer}>
+          <Image
+            source={require('@shared/assets/images/owl-logo-prod.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </ThemedView>
+        
         <ThemedCard style={styles.textCard}>
-          <ThemedText style={styles.emoji}>🎯</ThemedText>
-          
           <ThemedText style={styles.title} type="title">
             You're all set!
           </ThemedText>
           
           <ThemedText style={styles.subtitle} type="default">
-            Your philosophical adventure begins now. Dive in and start exploring 
-            the great questions that have captivated thinkers throughout history.
-          </ThemedText>
-          
-          <ThemedView style={styles.featuresContainer}>
-            <ThemedView style={styles.feature}>
-              <ThemedText style={styles.featureIcon}>💭</ThemedText>
-              <ThemedText style={styles.featureText}>
-                Engage in thoughtful conversations
-              </ThemedText>
-            </ThemedView>
-            
-            <ThemedView style={styles.feature}>
-              <ThemedText style={styles.featureIcon}>🎭</ThemedText>
-              <ThemedText style={styles.featureText}>
-                Choose from different philosophical personas
-              </ThemedText>
-            </ThemedView>
-            
-            <ThemedView style={styles.feature}>
-              <ThemedText style={styles.featureIcon}>🌱</ThemedText>
-              <ThemedText style={styles.featureText}>
-                Grow your understanding and perspective
-              </ThemedText>
-            </ThemedView>
-          </ThemedView>
-          
-          <ThemedText style={styles.encouragement} type="default">
-            The unexamined life is not worth living - let's examine it together.
+            You can now choose a philosopher and start chatting, enjoy!
           </ThemedText>
         </ThemedCard>
       </ThemedView>
       
       <ThemedView style={styles.buttonContainer}>
         <ThemedButton
-          title="Start Exploring"
+          title="Choose a Philosopher"
           onPress={onGetStarted}
           variant="primary"
           size="large"
@@ -84,11 +62,24 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   textCard: {
     padding: 32,
     borderRadius: 16,
     alignItems: 'center',
+  },
+  logoContainer: {
+    backgroundColor: Colors.background,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    opacity: 0.8,
   },
   emoji: {
     fontSize: 48,

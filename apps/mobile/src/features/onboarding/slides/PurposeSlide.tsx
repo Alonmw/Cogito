@@ -18,41 +18,16 @@ export default function PurposeSlide({ onNext }: PurposeSlideProps) {
       <ThemedView style={styles.content}>
         <ThemedCard style={styles.textCard}>
           <ThemedText style={styles.title} type="title">
-            Your philosophical companion
+            Chat with history's greatest minds
           </ThemedText>
           
           <ThemedText style={styles.subtitle} type="default">
-            Cogito allows you to explore the great questions that have fascinated 
-            humanity for centuries. Whether you're curious about ethics, meaning, 
-            consciousness, or existence itself, we're here to guide your journey.
+            Ever wanted to debate with Socrates? Challenge Kant's ideas? 
+            Or explore Nietzsche's philosophy? Now you can! 
+            Jump into conversations with the philosophers who shaped the world we live in.
           </ThemedText>
           
-          <ThemedView style={styles.featuresContainer}>
-            <ThemedView style={styles.feature}>
-              <ThemedText style={styles.featureTitle}>💭 Deep Conversations</ThemedText>
-              <ThemedText style={styles.featureDescription}>
-                Engage with different philosophical perspectives through thoughtful dialogue
-              </ThemedText>
-            </ThemedView>
-            
-            <ThemedView style={styles.feature}>
-              <ThemedText style={styles.featureTitle}>🎭 Multiple Personas</ThemedText>
-              <ThemedText style={styles.featureDescription}>
-                Chat with AI philosophers representing various schools of thought
-              </ThemedText>
-            </ThemedView>
-            
-            <ThemedView style={styles.feature}>
-              <ThemedText style={styles.featureTitle}>🌱 Personal Growth</ThemedText>
-              <ThemedText style={styles.featureDescription}>
-                Develop your critical thinking and expand your worldview
-              </ThemedText>
-            </ThemedView>
-          </ThemedView>
           
-          <ThemedText style={styles.callToAction} type="default">
-            Ready to embark on your philosophical adventure?
-          </ThemedText>
         </ThemedCard>
       </ThemedView>
       
@@ -79,11 +54,14 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingTop: '65%',
   },
   textCard: {
     padding: 24,
     borderRadius: 16,
+    alignItems: 'center',
   },
   title: {
     fontFamily: 'Lora-SemiBold',

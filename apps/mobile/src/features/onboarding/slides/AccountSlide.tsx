@@ -167,7 +167,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: '40%',
   },
   formCard: {
     padding: 24,

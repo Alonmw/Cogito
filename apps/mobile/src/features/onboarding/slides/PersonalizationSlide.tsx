@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Pressable, Dimensions } from 'react-native';
+import { StyleSheet, Pressable, Dimensions, ScrollView } from 'react-native';
 import { ThemedView } from '@shared/components/ThemedView';
 import { ThemedText } from '@shared/components/ThemedText';
 import { ThemedButton } from '@shared/components/ThemedButton';
@@ -60,7 +60,11 @@ export default function PersonalizationSlide({ onNext, onSkip, onTopicsSelected 
             Help us personalize your journey. Select the philosophical topics that intrigue you most:
           </ThemedText>
           
-          <ThemedView style={styles.topicsContainer}>
+          <ScrollView 
+            style={styles.topicsScrollContainer}
+            contentContainerStyle={styles.topicsContainer}
+            showsVerticalScrollIndicator={false}
+          >
             {PHILOSOPHY_TOPICS.map((topic) => (
               <Pressable
                 key={topic}
@@ -80,7 +84,7 @@ export default function PersonalizationSlide({ onNext, onSkip, onTopicsSelected 
                 </ThemedText>
               </Pressable>
             ))}
-          </ThemedView>
+          </ScrollView>
           
           {selectedTopics.length > 0 && (
             <ThemedText style={styles.selectedCount} type="default">
@@ -122,7 +126,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: '10%',
   },
   textCard: {
     padding: 24,
@@ -144,12 +149,16 @@ const styles = StyleSheet.create({
     color: Colors.text,
     opacity: 0.9,
   },
+  topicsScrollContainer: {
+    maxHeight: 300,
+    marginBottom: 16,
+  },
   topicsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    marginBottom: 16,
     gap: 8,
+    paddingBottom: 10,
   },
   topicButton: {
     paddingHorizontal: 16,
@@ -181,6 +190,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -189,8 +199,9 @@ const styles = StyleSheet.create({
   },
   skipButton: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 1,
     paddingVertical: 14,
+    
   },
   continueButton: {
     flex: 1,

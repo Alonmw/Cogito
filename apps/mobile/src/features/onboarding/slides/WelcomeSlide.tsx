@@ -26,18 +26,15 @@ export default function WelcomeSlide({ onNext }: WelcomeSlideProps) {
         
         <ThemedCard style={styles.textCard}>
           <ThemedText style={styles.title} type="title">
-            Welcome explorer
+            Welcome, Explorer!
           </ThemedText>
           
           <ThemedText style={styles.subtitle} type="default">
-            We're thrilled to have you join us on this journey of philosophical discovery. 
-            Cogito is your personal guide to exploring the depths of human thought and wisdom.
+            Thank you for joining! You're about to chat with 
+            some of history's most fascinating thinkers – from ancient Greeks to modern rebels.
           </ThemedText>
           
-          <ThemedText style={styles.description} type="default">
-            Let's take a moment to set up your experience and help you get the most out of 
-            your philosophical explorations.
-          </ThemedText>
+          
         </ThemedCard>
       </ThemedView>
       
@@ -72,8 +69,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: 120,
+    height: 120,
     opacity: 0.8,
   },
   textCard: {
@@ -95,6 +92,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     color: Colors.text,
     opacity: 0.9,
+    fontFamily: 'Lora-SemiBold',
   },
   description: {
     fontSize: 16,
