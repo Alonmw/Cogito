@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Pressable, StyleSheet, ViewStyle, Dimensions } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Pressable, StyleSheet, ViewStyle, Dimensions, Animated, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import Swiper from 'react-native-swiper';
 import { personas, PersonaUI } from '@shared/constants/personas';
@@ -16,6 +16,9 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const PersonaSelectionScreen: React.FC = () => {
   const router = useRouter();
   const { isGuest, user, continueAsGuest } = useAuth();
+  const animatedValues = useRef<{ [key: string]: Animated.Value[] }>({});
+  const bounceAnim = useRef(new Animated.Value(0)).current;
+  const scrollHintOpacity = useRef<{ [key: string]: Animated.Value }>({});
 
   // Themed colors
   const cardBackground = Colors.background;
@@ -64,29 +67,75 @@ const PersonaSelectionScreen: React.FC = () => {
     });
   }, [isGuest]);
 
-  const renderPromptSuggestion = (persona: PersonaUI, suggestion: string) => (
-    <ThemedView style={styles.suggestionButtonContainer} key={suggestion}>
-      <ThemedButton
-        title={suggestion}
-        onPress={() => handleSelectPersona(persona.id, suggestion)}
-        variant="outline"
-        size="small"
-        style={{
-          ...styles.suggestionButton,
-          backgroundColor: suggestionBg,
-          borderColor: primaryActionColor,
-        }}
-        textStyle={{
-          ...styles.suggestionText,
-          color: primaryActionColor,
-        }}
-      />
-    </ThemedView>
-  );
+  // Bounce animation for scroll hint
+  useEffect(() => {
+    const startBounceAnimation = () => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(bounceAnim, {
+            toValue: -6,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(bounceAnim, {
+            toValue: 0,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+
+    const timer = setTimeout(startBounceAnimation, 1000); // Start after 1 second
+    return () => clearTimeout(timer);
+  }, [bounceAnim]);
+
+  // Initialize animated values for each persona
+  const initializeAnimations = (personaId: string, suggestionCount: number) => {
+    if (!animatedValues.current[personaId]) {
+      animatedValues.current[personaId] = Array(suggestionCount).fill(0).map(() => new Animated.Value(0));
+    }
+  };
+
+  // Animate suggestions appearing one by one
+  const animateSuggestions = (personaId: string) => {
+    const animations = animatedValues.current[personaId];
+    if (animations) {
+      const staggeredAnimations = animations.map((anim, index) =>
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 400,
+          delay: index * 200, // 200ms delay between each button
+          useNativeDriver: true,
+        })
+      );
+      
+      Animated.stagger(100, staggeredAnimations).start();
+    }
+  };
+
+  // Initialize scroll hint opacity for each persona
+  const initializeScrollHint = (personaId: string) => {
+    if (!scrollHintOpacity.current[personaId]) {
+      scrollHintOpacity.current[personaId] = new Animated.Value(1);
+    }
+  };
+
+  // Hide scroll hint when user scrolls
+  const handleScroll = (personaId: string) => {
+    const hintOpacity = scrollHintOpacity.current[personaId];
+    if (hintOpacity) {
+      Animated.timing(hintOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.header}>Choose a Persona</ThemedText>
+      <ThemedText type="title" style={styles.header}>Choose a Philosopher</ThemedText>
       <Swiper
         style={styles.wrapper}
         showsButtons={false}
@@ -106,8 +155,73 @@ const PersonaSelectionScreen: React.FC = () => {
               <ThemedText type="title" style={styles.personaName}>{persona.name}</ThemedText>
               <ThemedText type="subtitle" style={styles.personaDescription}>{persona.description}</ThemedText>
               <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>Try asking:</ThemedText>
-              <ThemedView style={styles.suggestionsRow}>
-                {persona.promptSuggestions.map(suggestion => renderPromptSuggestion(persona, suggestion))}
+              <ThemedView style={styles.suggestionsContainer}>
+                <ScrollView 
+                  style={styles.suggestionsScrollView}
+                  contentContainerStyle={styles.suggestionsScrollContent}
+                  showsVerticalScrollIndicator={false}
+                  nestedScrollEnabled={true}
+                  onScroll={() => handleScroll(persona.id)}
+                  scrollEventThrottle={16}
+                >
+                  {persona.promptSuggestions.map((suggestion, index) => {
+                    // Initialize animations for this persona
+                    initializeAnimations(persona.id, persona.promptSuggestions.length);
+                    
+                    // Start animation after a short delay
+                    setTimeout(() => animateSuggestions(persona.id), 300);
+                    
+                    const animatedValue = animatedValues.current[persona.id]?.[index] || new Animated.Value(0);
+                    
+                    return (
+                      <Animated.View 
+                        key={suggestion} 
+                        style={[
+                          styles.suggestionButtonContainer,
+                          {
+                            opacity: animatedValue,
+                            transform: [{
+                              translateY: animatedValue.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [30, 0],
+                              })
+                            }]
+                          }
+                        ]}
+                      >
+                        <ThemedButton
+                          title={suggestion}
+                          onPress={() => handleSelectPersona(persona.id, suggestion)}
+                          variant="outline"
+                          size="medium"
+                          style={{
+                            ...styles.suggestionButton,
+                            backgroundColor: suggestionBg,
+                            borderColor: primaryActionColor,
+                          }}
+                          textStyle={{
+                            ...styles.suggestionText,
+                            color: primaryActionColor,
+                          }}
+                        />
+                      </Animated.View>
+                    );
+                  })}
+                </ScrollView>
+                {persona.promptSuggestions.length > 3 && (() => {
+                  // Initialize scroll hint opacity for this persona
+                  initializeScrollHint(persona.id);
+                  const hintOpacity = scrollHintOpacity.current[persona.id] || new Animated.Value(1);
+                  
+                  return (
+                    <Animated.View style={[styles.scrollHint, { 
+                      opacity: hintOpacity,
+                      transform: [{ translateY: bounceAnim }] 
+                    }]}>
+                      <ThemedText style={styles.scrollIconText}>⌄</ThemedText>
+                    </Animated.View>
+                  );
+                })()}
               </ThemedView>
               <ThemedButton
                 title={`Chat as ${persona.name}`}
@@ -172,33 +286,44 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 18,
   },
-  suggestionsRow: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
-    justifyContent: 'center',
-    marginHorizontal: -4,
+  suggestionsContainer: {
+    height: 280, // Fixed height for unified size across personas
     marginBottom: 24,
   },
-  suggestionButtonContainer: {
-    margin: 4,
-    maxWidth: '47%',
-    minWidth: '47%',
+  suggestionsScrollView: {
+    flex: 1,
   },
-  suggestionButton: {
-    borderRadius: 8,
-    borderWidth: 1,
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    height: 'auto',
-    minHeight: 48,
+  suggestionsScrollContent: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  suggestionButtonContainer: {
     width: '100%',
   },
+  suggestionButton: {
+    borderRadius: 12,
+    borderWidth: 2,
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    height: 'auto',
+    minHeight: 60,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   suggestionText: {
-    fontSize: 14,
+    fontSize: 17,
+    fontWeight: '600',
     textAlign: 'center',
     flexWrap: 'wrap',
-    lineHeight: 18,
+    lineHeight: 24,
+    fontFamily: 'Lora-SemiBold',
   },
   selectButton: {
     borderRadius: 12,
@@ -229,6 +354,27 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
+  },
+  scrollHint: {
+    position: 'absolute',
+    bottom: 12,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  scrollIconText: {
+    fontSize: 18,
+    color: Colors.tabIconDefault,
+    fontWeight: 'bold',
   },
 });
 

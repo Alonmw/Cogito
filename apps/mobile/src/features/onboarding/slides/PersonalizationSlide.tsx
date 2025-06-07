@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, Pressable, Dimensions, ScrollView } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { StyleSheet, Pressable, Dimensions, ScrollView, Animated } from 'react-native';
 import { ThemedView } from '@shared/components/ThemedView';
 import { ThemedText } from '@shared/components/ThemedText';
 import { ThemedButton } from '@shared/components/ThemedButton';
@@ -31,6 +31,8 @@ const PHILOSOPHY_TOPICS = [
 
 export default function PersonalizationSlide({ onNext, onSkip, onTopicsSelected }: PersonalizationSlideProps) {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const bounceAnim = useRef(new Animated.Value(0)).current;
+  const scrollHintOpacity = useRef(new Animated.Value(1)).current;
 
   const toggleTopic = (topic: string) => {
     setSelectedTopics(prev => {
@@ -48,6 +50,38 @@ export default function PersonalizationSlide({ onNext, onSkip, onTopicsSelected 
     onNext();
   };
 
+  // Bounce animation for scroll hint
+  useEffect(() => {
+    const startBounceAnimation = () => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(bounceAnim, {
+            toValue: -6,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(bounceAnim, {
+            toValue: 0,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+
+    const timer = setTimeout(startBounceAnimation, 1000); // Start after 1 second
+    return () => clearTimeout(timer);
+  }, [bounceAnim]);
+
+  // Hide scroll hint when user scrolls
+  const handleScroll = () => {
+    Animated.timing(scrollHintOpacity, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
   return (
     <ThemedView style={styles.container}>
       <ThemedView style={styles.content}>
@@ -60,31 +94,43 @@ export default function PersonalizationSlide({ onNext, onSkip, onTopicsSelected 
             Help us personalize your journey. Select the philosophical topics that intrigue you most:
           </ThemedText>
           
-          <ScrollView 
-            style={styles.topicsScrollContainer}
-            contentContainerStyle={styles.topicsContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            {PHILOSOPHY_TOPICS.map((topic) => (
-              <Pressable
-                key={topic}
-                style={[
-                  styles.topicButton,
-                  selectedTopics.includes(topic) && styles.selectedTopicButton
-                ]}
-                onPress={() => toggleTopic(topic)}
-              >
-                <ThemedText
+          <ThemedView style={styles.scrollableContainer}>
+            <ScrollView 
+              style={styles.topicsScrollContainer}
+              contentContainerStyle={styles.topicsContainer}
+              showsVerticalScrollIndicator={false}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+            >
+              {PHILOSOPHY_TOPICS.map((topic) => (
+                <Pressable
+                  key={topic}
                   style={[
-                    styles.topicText,
-                    selectedTopics.includes(topic) && styles.selectedTopicText
+                    styles.topicButton,
+                    selectedTopics.includes(topic) && styles.selectedTopicButton
                   ]}
+                  onPress={() => toggleTopic(topic)}
                 >
-                  {topic}
-                </ThemedText>
-              </Pressable>
-            ))}
-          </ScrollView>
+                  <ThemedText
+                    style={[
+                      styles.topicText,
+                      selectedTopics.includes(topic) && styles.selectedTopicText
+                    ]}
+                  >
+                    {topic}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </ScrollView>
+            {PHILOSOPHY_TOPICS.length > 6 && (
+              <Animated.View style={[styles.scrollHint, { 
+                opacity: scrollHintOpacity,
+                transform: [{ translateY: bounceAnim }] 
+              }]}>
+                <ThemedText style={styles.scrollIconText}>⌄</ThemedText>
+              </Animated.View>
+            )}
+          </ThemedView>
           
           {selectedTopics.length > 0 && (
             <ThemedText style={styles.selectedCount} type="default">
@@ -97,18 +143,20 @@ export default function PersonalizationSlide({ onNext, onSkip, onTopicsSelected 
       <ThemedView style={styles.buttonContainer}>
         <ThemedView style={styles.buttonRow}>
           <ThemedButton
-            title="Skip for now"
+            title="Skip"
             onPress={onSkip}
             variant="secondary"
             size="medium"
             style={styles.skipButton}
+            textStyle={styles.buttonText}
           />
           <ThemedButton
-            title={selectedTopics.length > 0 ? "Continue" : "Continue anyway"}
+            title={selectedTopics.length > 0 ? "Continue" : "Continue"}
             onPress={handleContinue}
             variant="primary"
             size="medium"
             style={styles.continueButton}
+            textStyle={styles.buttonText}
           />
         </ThemedView>
       </ThemedView>
@@ -149,9 +197,12 @@ const styles = StyleSheet.create({
     color: Colors.text,
     opacity: 0.9,
   },
+  scrollableContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
   topicsScrollContainer: {
     maxHeight: 300,
-    marginBottom: 16,
   },
   topicsContainer: {
     flexDirection: 'row',
@@ -199,13 +250,41 @@ const styles = StyleSheet.create({
   },
   skipButton: {
     flex: 1,
-    borderRadius: 1,
-    paddingVertical: 14,
-    
+    paddingVertical: 12,
+    minHeight: 58,
   },
   continueButton: {
     flex: 1,
-    borderRadius: 12,
-    paddingVertical: 14,
+    
+    paddingVertical: 16,
+    minHeight: 58,
+  },
+  buttonText: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: 'Lora-SemiBold',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+  },
+  scrollHint: {
+    position: 'absolute',
+    bottom: 12,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  scrollIconText: {
+    fontSize: 18,
+    color: Colors.tabIconDefault,
+    fontWeight: 'bold',
   },
 }); 
