@@ -78,9 +78,17 @@ const PersonaSelectionScreen: React.FC = () => {
       opacity.value = 1 - progress * 0.1;
     },
     onEnd: (event) => {
-      const shouldGoToNext = event.translationX < -SCREEN_WIDTH * 0.3 && currentIndex < PERSONA_COUNT - 1;
-      const shouldGoToPrev = event.translationX > SCREEN_WIDTH * 0.3 && currentIndex > 0;
-      
+      const SWIPE_VELOCITY_THRESHOLD = 800;
+      const TRANSLATION_THRESHOLD = SCREEN_WIDTH * 0.2;
+
+      const shouldGoToNext =
+        (event.translationX < -TRANSLATION_THRESHOLD || event.velocityX < -SWIPE_VELOCITY_THRESHOLD) &&
+        currentIndex < PERSONA_COUNT - 1;
+
+      const shouldGoToPrev =
+        (event.translationX > TRANSLATION_THRESHOLD || event.velocityX > SWIPE_VELOCITY_THRESHOLD) &&
+        currentIndex > 0;
+
       let targetIndex = currentIndex;
       
       if (shouldGoToNext) {
