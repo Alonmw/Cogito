@@ -1,15 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import { StyleSheet, Dimensions, StatusBar } from 'react-native';
-import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
-  useAnimatedGestureHandler,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
   interpolate,
   Extrapolate,
-  runOnJS,
   interpolateColor,
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
@@ -51,52 +49,6 @@ export default function ModernOnboardingScreen({}: ModernOnboardingScreenProps) 
 
   // Animated values
   const translateX = useSharedValue(0);
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(1);
-
-  // Gesture handler for swipe navigation
-  const gestureHandler = useAnimatedGestureHandler({
-    onStart: (_, context: any) => {
-      context.startX = translateX.value;
-    },
-    onActive: (event, context) => {
-      const newTranslateX = context.startX + event.translationX;
-      const maxTranslateX = 0;
-      const minTranslateX = -(SLIDE_COUNT - 1) * SCREEN_WIDTH;
-      
-      translateX.value = Math.max(minTranslateX, Math.min(maxTranslateX, newTranslateX));
-      
-      // Add subtle scale and opacity effects during swipe
-      const progress = Math.abs(event.translationX) / SCREEN_WIDTH;
-      scale.value = 1 - progress * 0.05;
-      opacity.value = 1 - progress * 0.1;
-    },
-    onEnd: (event) => {
-      const shouldGoToNext = event.translationX < -SCREEN_WIDTH * 0.3 && currentIndex < SLIDE_COUNT - 1;
-      const shouldGoToPrev = event.translationX > SCREEN_WIDTH * 0.3 && currentIndex > 0;
-      
-      let targetIndex = currentIndex;
-      
-      if (shouldGoToNext) {
-        targetIndex = currentIndex + 1;
-      } else if (shouldGoToPrev) {
-        targetIndex = currentIndex - 1;
-      }
-      
-      // Smooth spring animation
-      translateX.value = withSpring(-targetIndex * SCREEN_WIDTH, {
-        damping: 20,
-        stiffness: 90,
-      });
-      
-      scale.value = withSpring(1);
-      opacity.value = withSpring(1);
-      
-      if (targetIndex !== currentIndex) {
-        runOnJS(setCurrentIndex)(targetIndex);
-      }
-    },
-  });
 
   // Programmatic navigation functions
   const goToNext = useCallback(() => {
@@ -152,11 +104,7 @@ export default function ModernOnboardingScreen({}: ModernOnboardingScreenProps) 
 
   // Animated styles
   const containerStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translateX.value },
-      { scale: scale.value },
-    ],
-    opacity: opacity.value,
+    transform: [{ translateX: translateX.value }],
   }));
 
   // Background gradient animation based on current slide
@@ -182,37 +130,35 @@ export default function ModernOnboardingScreen({}: ModernOnboardingScreenProps) 
       <StatusBar barStyle="light-content" />
       <Animated.View style={[styles.background, backgroundStyle]} />
       
-      <PanGestureHandler onGestureEvent={gestureHandler}>
-        <Animated.View style={[styles.slidesContainer, containerStyle]}>
-          {slides.map((slide, index) => (
-            <Animated.View key={slide.key} style={styles.slide}>
-              <SlideWrapper
-                index={index}
-                currentIndex={currentIndex}
-                translateX={translateX}
-              >
-                {(() => {
-                  const Component = slide.component as any;
-                  switch (slide.key) {
-                    case 'welcome':
-                      return <Component onNext={goToNext} />;
-                    case 'purpose':
-                      return <Component onNext={goToNext} />;
-                    case 'personalization':
-                      return <Component onNext={goToNext} onSkip={goToNext} onTopicsSelected={handleTopicsSelected} />;
-                    case 'account':
-                      return <Component onAccountCreated={goToNext} onSkip={goToNext} />;
-                    case 'getStarted':
-                      return <Component onGetStarted={handleIntroductionComplete} isLoading={isCompleting} />;
-                    default:
-                      return null;
-                  }
-                })()}
-              </SlideWrapper>
-            </Animated.View>
-          ))}
-        </Animated.View>
-      </PanGestureHandler>
+      <Animated.View style={[styles.slidesContainer, containerStyle]}>
+        {slides.map((slide, index) => (
+          <Animated.View key={slide.key} style={styles.slide}>
+            <SlideWrapper
+              index={index}
+              currentIndex={currentIndex}
+              translateX={translateX}
+            >
+              {(() => {
+                const Component = slide.component as any;
+                switch (slide.key) {
+                  case 'welcome':
+                    return <Component onNext={goToNext} />;
+                  case 'purpose':
+                    return <Component onNext={goToNext} />;
+                  case 'personalization':
+                    return <Component onNext={goToNext} onSkip={goToNext} onTopicsSelected={handleTopicsSelected} />;
+                  case 'account':
+                    return <Component onAccountCreated={goToNext} onSkip={goToNext} />;
+                  case 'getStarted':
+                    return <Component onGetStarted={handleIntroductionComplete} isLoading={isCompleting} />;
+                  default:
+                    return null;
+                }
+              })()}
+            </SlideWrapper>
+          </Animated.View>
+        ))}
+      </Animated.View>
 
       {/* Modern Progress Indicator */}
       <ModernProgressIndicator 
@@ -321,7 +267,7 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     position: 'absolute',
-    bottom: 60,
+    bottom: 30,
     left: 20,
     right: 20,
     alignItems: 'center',
