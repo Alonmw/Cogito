@@ -2,6 +2,7 @@ import logging
 from flask import Blueprint, request, jsonify, current_app
 from werkzeug.exceptions import RequestEntityTooLarge
 from app.services.transcription_service import get_transcription_service
+from app.extensions import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -9,6 +10,7 @@ logger = logging.getLogger(__name__)
 transcription_bp = Blueprint('transcription', __name__)
 
 @transcription_bp.route('/transcribe', methods=['POST'])
+@limiter.limit("5 per minute")  # Conservative limit for resource-intensive transcription
 def transcribe_audio():
     """
     Transcribe uploaded audio file to text using OpenAI Whisper
@@ -83,6 +85,7 @@ def transcribe_audio():
         }), 500
 
 @transcription_bp.route('/transcribe/health', methods=['GET'])
+@limiter.limit("30 per minute")  # More generous limit for health checks
 def transcription_health():
     """
     Health check endpoint for transcription service
