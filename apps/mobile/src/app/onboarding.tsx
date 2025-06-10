@@ -1,5 +1,5 @@
-import IntroductionScreen from '@features/onboarding/IntroductionScreen';
+import ModernOnboardingScreen from '@features/onboarding/ModernOnboardingScreen';
  
 export default function OnboardingRoute() {
-  return <IntroductionScreen />;
+  return <ModernOnboardingScreen />;
 } 
