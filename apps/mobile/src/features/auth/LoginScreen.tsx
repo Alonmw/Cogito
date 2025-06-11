@@ -24,6 +24,8 @@ import { ThemedView } from '@shared/components/ThemedView';
 import { ThemedText } from '@shared/components/ThemedText';
 import { RandomQuote } from '@shared/components/RandomQuote';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { AnimatedButton } from '@shared/components/AnimatedButton';
+import { FontAwesome } from '@expo/vector-icons';
 
 const { width: screenWidth } = Dimensions.get('window');
 const googleLogoUri = 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png';
@@ -65,7 +67,6 @@ export default function LoginScreen() {
   const formTranslateX = useSharedValue(0);
   const cardScale = useSharedValue(1);
   const buttonScale = useSharedValue(1);
-  const googleButtonScale = useSharedValue(1);
   const guestButtonScale = useSharedValue(1);
   const emailInputScale = useSharedValue(1);
   const passwordInputScale = useSharedValue(1);
@@ -148,10 +149,6 @@ export default function LoginScreen() {
   };
 
   const handleGoogleSignIn = () => {
-    googleButtonScale.value = withSequence(
-      withTiming(0.95, { duration: 100 }),
-      withTiming(1, { duration: 100 })
-    );
     googleSignIn();
   };
 
@@ -210,12 +207,6 @@ export default function LoginScreen() {
   const buttonAnimatedStyle = useAnimatedStyle(() => {
     return {
       transform: [{ scale: buttonScale.value }],
-    };
-  });
-
-  const googleButtonAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: googleButtonScale.value }],
     };
   });
 
@@ -285,7 +276,7 @@ export default function LoginScreen() {
                           {
                             color: Colors.text,
                             borderColor: focusedInput === 'email' ? Colors.tint : Colors.tabIconDefault,
-                            backgroundColor: Colors.background,
+                            backgroundColor: Colors.card,
                             borderWidth: focusedInput === 'email' ? 2 : 1,
                           }
                         ]}
@@ -308,7 +299,7 @@ export default function LoginScreen() {
                           {
                             color: Colors.text,
                             borderColor: focusedInput === 'password' ? Colors.tint : Colors.tabIconDefault,
-                            backgroundColor: Colors.background,
+                            backgroundColor: Colors.card,
                             borderWidth: focusedInput === 'password' ? 2 : 1,
                           }
                         ]}
@@ -372,7 +363,7 @@ export default function LoginScreen() {
                           {
                             color: Colors.text,
                             borderColor: focusedInput === 'name' ? Colors.tint : Colors.tabIconDefault,
-                            backgroundColor: Colors.background,
+                            backgroundColor: Colors.card,
                             borderWidth: focusedInput === 'name' ? 2 : 1,
                           }
                         ]}
@@ -394,7 +385,7 @@ export default function LoginScreen() {
                           {
                             color: Colors.text,
                             borderColor: focusedInput === 'email' ? Colors.tint : Colors.tabIconDefault,
-                            backgroundColor: Colors.background,
+                            backgroundColor: Colors.card,
                             borderWidth: focusedInput === 'email' ? 2 : 1,
                           }
                         ]}
@@ -417,7 +408,7 @@ export default function LoginScreen() {
                           {
                             color: Colors.text,
                             borderColor: focusedInput === 'password' ? Colors.tint : Colors.tabIconDefault,
-                            backgroundColor: Colors.background,
+                            backgroundColor: Colors.card,
                             borderWidth: focusedInput === 'password' ? 2 : 1,
                           }
                         ]}
@@ -462,37 +453,16 @@ export default function LoginScreen() {
                 <ThemedView style={[styles.line, { backgroundColor: Colors.tabIconDefault }]} />
               </ThemedView>
               
-              <AnimatedPressable
+              <AnimatedButton
+                title="Sign in with Google"
                 onPress={handleGoogleSignIn}
+                variant="secondary"
+                size="large"
+                style={styles.googleButton}
+                isLoading={isSigningIn}
                 disabled={authInProgress}
-                style={[
-                  googleButtonAnimatedStyle,
-                  styles.googleButton,
-                  {
-                    backgroundColor: googleButtonBackgroundColor,
-                    borderColor: googleButtonBorderColor,
-                  },
-                  authInProgress && styles.buttonDisabled,
-                ]}
-              >
-                <ThemedView style={styles.googleButtonContent}>
-                  <Image
-                    source={{ uri: googleLogoUri }}
-                    style={styles.googleLogo}
-                    resizeMode="contain"
-                  />
-                  <ThemedText style={[styles.googleButtonText, { color: googleButtonTextColor }]}>
-                    Sign in with Google
-                  </ThemedText>
-                </ThemedView>
-              </AnimatedPressable>
-              
-              {isSigningIn && (
-                <Animated.View style={[styles.loadingContainer, loadingAnimatedStyle]}>
-                  <ActivityIndicator size="small" color={Colors.tint} />
-                  <ThemedText style={[styles.loadingText, { color: Colors.text }]}>Signing in...</ThemedText>
-                </Animated.View>
-              )}
+                icon={<FontAwesome name="google" size={18} color={Colors.text} style={{ marginRight: 12 }} />}
+              />
               
               {signInError && (
                 <ThemedText style={styles.errorText}>Error: {signInError}</ThemedText>
@@ -567,6 +537,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 12,
     borderRadius: 20,
+    backgroundColor: Colors.card,
     shadowColor: Colors.text,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -641,45 +612,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   googleButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
     width: '100%',
-    flexDirection: 'row',
-    borderWidth: 1.5,
-    shadowColor: Colors.text,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  googleButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  googleLogo: {
-    width: 20,
-    height: 20,
-    marginRight: 12,
-  },
-  googleButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderRadius: 12,
     marginTop: 8,
-    height: 20,
-  },
-  loadingText: {
-    marginLeft: 10,
-    fontWeight: '500',
+    marginBottom: 8,
+    backgroundColor: Colors.card,
+    borderColor: Colors.tabIconDefault,
+    borderWidth: 1,
   },
   errorText: {
     color: '#EF4444',

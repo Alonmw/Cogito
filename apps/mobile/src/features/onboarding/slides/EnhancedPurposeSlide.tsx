@@ -98,8 +98,14 @@ const styles = StyleSheet.create({
   },
   textCard: {
     padding: 24,
-    borderRadius: 16,
+    borderRadius: 20,
     alignItems: 'center',
+    backgroundColor: Colors.card,
+    shadowColor: Colors.text,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 5,
   },
   title: {
     fontFamily: 'Lora-SemiBold',

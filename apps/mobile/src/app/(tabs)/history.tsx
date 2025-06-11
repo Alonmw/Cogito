@@ -202,7 +202,7 @@ export default function HistoryScreen() {
         style={({ pressed }) => [
           {
             marginVertical: spacing.s / 2,
-            backgroundColor: pressed && !isEditMode ? '#e7dbc2' : '#F5E9D7',
+            backgroundColor: pressed && !isEditMode ? Colors.border : Colors.card,
             borderRadius: 12,
             ...shadows.low,
             padding: spacing.m,
@@ -347,7 +347,7 @@ export default function HistoryScreen() {
   }
 
   return (
-    <ThemedView style={[styles.container, { backgroundColor: '#FAF3E0' }]}>
+    <ThemedView style={[styles.container, { backgroundColor: Colors.background }]}>
       <ThemedView style={{
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -403,10 +403,10 @@ export default function HistoryScreen() {
               onRefresh={onRefresh} 
               tintColor={Colors.tint} 
               colors={[Colors.tint]} 
-              progressBackgroundColor={'#FAF3E0'} 
+              progressBackgroundColor={Colors.background} 
             />
           }
-          contentContainerStyle={{ paddingHorizontal: spacing.m, paddingVertical: spacing.s, backgroundColor: '#FAF3E0' }}
+          contentContainerStyle={{ paddingHorizontal: spacing.m, paddingVertical: spacing.s, backgroundColor: Colors.background }}
           disableRightSwipe={isEditMode} // Disable swipe when in edit mode
           disableLeftSwipe={isEditMode} // Disable swipe when in edit mode
           closeOnRowPress={true} // Close the row when pressing on the visible item
@@ -471,12 +471,12 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   confirmButton: {
-    backgroundColor: '#0c6df2',
+    backgroundColor: Colors.tint,
     borderRadius: 6,
   },
   rowBack: {
     alignItems: 'center',
-    backgroundColor: '#DDD',
+    backgroundColor: Colors.background,
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 12,
   },
   backLeftBtnLeft: {
-    backgroundColor: '#0c6df2', // Blue color for edit
+    backgroundColor: Colors.tint, // Blue color for edit
     left: 0,
   },
   backRightBtn: {
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 12,
   },
   backRightBtnRight: {
-    backgroundColor: '#FE4A49', // Red color for delete
+    backgroundColor: Colors.destructive, // Red color for delete
     right: 0,
   },
   backTextWhite: {

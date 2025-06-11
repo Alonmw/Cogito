@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { Pressable, StyleSheet, ViewStyle, TextStyle, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -18,6 +18,7 @@ interface AnimatedButtonProps {
   textStyle?: TextStyle;
   disabled?: boolean;
   isLoading?: boolean;
+  icon?: React.ReactNode;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -31,6 +32,7 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   textStyle,
   disabled = false,
   isLoading = false,
+  icon,
 }) => {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
@@ -102,9 +104,12 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
       onPressOut={handlePressOut}
       disabled={disabled || isLoading}
     >
-      <ThemedText style={[getTextStyle(), textStyle]}>
-        {isLoading ? 'Loading...' : title}
-      </ThemedText>
+      <View style={styles.contentContainer}>
+        {icon}
+        <ThemedText style={[getTextStyle(), textStyle]}>
+          {isLoading ? 'Loading...' : title}
+        </ThemedText>
+      </View>
     </AnimatedPressable>
   );
 };
@@ -115,6 +120,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
+    flexDirection: 'row',
+  },
+  contentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   
   // Sizes

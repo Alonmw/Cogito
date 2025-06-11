@@ -145,9 +145,15 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   textCard: {
-    padding: 32,
-    borderRadius: 16,
+    padding: 24,
+    borderRadius: 20,
     alignItems: 'center',
+    backgroundColor: Colors.card,
+    shadowColor: Colors.text,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 5,
   },
   title: {
     fontFamily: 'Lora-SemiBold',

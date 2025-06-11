@@ -189,7 +189,13 @@ const styles = StyleSheet.create({
   },
   textCard: {
     padding: 24,
-    borderRadius: 16,
+    borderRadius: 20,
+    backgroundColor: Colors.card,
+    shadowColor: Colors.text,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 5,
   },
   title: {
     fontFamily: 'Lora-SemiBold',
@@ -239,7 +245,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   selectedTopicText: {
-    color: '#FFFFFF',
+    color: Colors.tintedText,
     fontWeight: '600',
   },
   selectedCount: {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, TextInput, Alert, Platform, Pressable, Dimensions, Image } from 'react-native';
+import { StyleSheet, TextInput, Alert, Platform, Pressable, Dimensions, Image, View } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,6 +16,7 @@ import { AnimatedButton } from '@shared/components/AnimatedButton';
 import { useAuth } from '@features/auth/AuthContext';
 import { Colors } from '@shared/constants/Colors';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { FontAwesome } from '@expo/vector-icons';
 
 // Animated components
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
@@ -42,6 +43,9 @@ export default function EnhancedAccountSlide({ onAccountCreated, onSkip }: Enhan
     isLoggingIn,
     emailSignInError,
     user,
+    googleSignIn,
+    isSigningIn,
+    signInError,
   } = useAuth();
 
   // Animation values
@@ -114,6 +118,15 @@ export default function EnhancedAccountSlide({ onAccountCreated, onSkip }: Enhan
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      await googleSignIn();
+    } catch (error) {
+      // Error is handled by the auth context
+      // We could show an alert here if we wanted to.
+    }
+  };
+
   const handleToggleView = () => {
     toggleButtonScale.value = withSequence(
       withTiming(0.95, { duration: 100 }),
@@ -152,6 +165,7 @@ export default function EnhancedAccountSlide({ onAccountCreated, onSkip }: Enhan
   };
 
   const authInProgress = isRegistering || isLoggingIn;
+  const anyAuthInProgress = authInProgress || isSigningIn;
 
   // Animated styles
   const titleStyle = useAnimatedStyle(() => ({
@@ -236,9 +250,8 @@ export default function EnhancedAccountSlide({ onAccountCreated, onSkip }: Enhan
                         style={[
                           styles.input,
                           {
-                            color: Colors.text,
                             borderColor: focusedInput === 'name' ? Colors.tint : Colors.tabIconDefault,
-                            backgroundColor: Colors.background,
+                            backgroundColor: Colors.card,
                             borderWidth: focusedInput === 'name' ? 2 : 1,
                           }
                         ]}
@@ -247,7 +260,7 @@ export default function EnhancedAccountSlide({ onAccountCreated, onSkip }: Enhan
                         value={name}
                         onChangeText={setName}
                         autoCapitalize="words"
-                        editable={!authInProgress}
+                        editable={!anyAuthInProgress}
                         onFocus={() => handleInputFocus('name', nameInputScale)}
                         onBlur={() => handleInputBlur(nameInputScale)}
                       />
@@ -259,9 +272,8 @@ export default function EnhancedAccountSlide({ onAccountCreated, onSkip }: Enhan
                       style={[
                         styles.input,
                         {
-                          color: Colors.text,
                           borderColor: focusedInput === 'email' ? Colors.tint : Colors.tabIconDefault,
-                          backgroundColor: Colors.background,
+                          backgroundColor: Colors.card,
                           borderWidth: focusedInput === 'email' ? 2 : 1,
                         }
                       ]}
@@ -272,7 +284,7 @@ export default function EnhancedAccountSlide({ onAccountCreated, onSkip }: Enhan
                       keyboardType="email-address"
                       autoCapitalize="none"
                       autoCorrect={false}
-                      editable={!authInProgress}
+                      editable={!anyAuthInProgress}
                       onFocus={() => handleInputFocus('email', emailInputScale)}
                       onBlur={() => handleInputBlur(emailInputScale)}
                     />
@@ -283,9 +295,8 @@ export default function EnhancedAccountSlide({ onAccountCreated, onSkip }: Enhan
                       style={[
                         styles.input,
                         {
-                          color: Colors.text,
                           borderColor: focusedInput === 'password' ? Colors.tint : Colors.tabIconDefault,
-                          backgroundColor: Colors.background,
+                          backgroundColor: Colors.card,
                           borderWidth: focusedInput === 'password' ? 2 : 1,
                         }
                       ]}
@@ -294,15 +305,15 @@ export default function EnhancedAccountSlide({ onAccountCreated, onSkip }: Enhan
                       value={password}
                       onChangeText={setPassword}
                       secureTextEntry
-                      editable={!authInProgress}
+                      editable={!anyAuthInProgress}
                       onFocus={() => handleInputFocus('password', passwordInputScale)}
                       onBlur={() => handleInputBlur(passwordInputScale)}
                     />
                   </Animated.View>
                   
-                  {(registrationError || emailSignInError) && (
+                  {(registrationError || emailSignInError || signInError) && (
                     <ThemedText style={styles.errorText}>
-                      Error: {registrationError || emailSignInError}
+                      Error: {registrationError || emailSignInError || signInError}
                     </ThemedText>
                   )}
                   
@@ -314,14 +325,33 @@ export default function EnhancedAccountSlide({ onAccountCreated, onSkip }: Enhan
                       size="large"
                       style={styles.authButton}
                       isLoading={authInProgress}
-                      disabled={authInProgress}
+                      disabled={anyAuthInProgress}
+                    />
+                  </Animated.View>
+
+                  <View style={styles.dividerContainer}>
+                    <View style={styles.dividerLine} />
+                    <ThemedText style={styles.dividerText}>Or</ThemedText>
+                    <View style={styles.dividerLine} />
+                  </View>
+
+                  <Animated.View style={[{ width: '100%' }]}>
+                    <AnimatedButton
+                      title={isSignUp ? "Sign up with Google" : "Sign in with Google"}
+                      onPress={handleGoogleSignIn}
+                      variant="secondary"
+                      size="large"
+                      style={styles.googleButton}
+                      isLoading={isSigningIn}
+                      disabled={anyAuthInProgress}
+                      icon={<FontAwesome name="google" size={18} color={Colors.text} style={{ marginRight: 12 }} />}
                     />
                   </Animated.View>
                   
                   <AnimatedPressable
                     style={[toggleButtonAnimatedStyle, styles.toggleButton]}
                     onPress={handleToggleView}
-                    disabled={authInProgress}
+                    disabled={anyAuthInProgress}
                   >
                     <ThemedText style={[styles.toggleText, { color: Colors.tint }]}>
                       {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
@@ -336,7 +366,7 @@ export default function EnhancedAccountSlide({ onAccountCreated, onSkip }: Enhan
             <AnimatedPressable
               style={[skipButtonAnimatedStyle, styles.skipButton]}
               onPress={handleSkip}
-              disabled={authInProgress}
+              disabled={anyAuthInProgress}
             >
               <ThemedText style={[styles.skipButtonText, { color: Colors.tabIconDefault }]}>
                 Skip for now
@@ -360,47 +390,104 @@ interface SuccessViewProps {
 }
 
 const SuccessView: React.FC<SuccessViewProps> = ({ user, opacity, scale, logoScale, logoRotation, onContinue }) => {
-  const welcomeMessage = user?.displayName
-    ? `Welcome, ${user.displayName.split(' ')[0]}!`
-    : 'Account created successfully!';
+  const successButtonScale = useSharedValue(1);
 
-  const animatedStyle = useAnimatedStyle(() => {
+  const handleContinue = () => {
+    successButtonScale.value = withSequence(
+      withTiming(0.95, { duration: 100 }),
+      withTiming(1, { duration: 100 })
+    );
+    onContinue();
+  };
+
+  const successViewStyle = useAnimatedStyle(() => {
     return {
       opacity: opacity.value,
       transform: [{ scale: scale.value }],
     };
   });
-
+  
   const logoStyle = useAnimatedStyle(() => ({
     transform: [
-      { rotate: `${logoRotation.value}deg` },
       { scale: logoScale.value },
+      { rotate: `${logoRotation.value}deg` },
     ],
   }));
 
   return (
-    <Animated.View style={[styles.successContainer, animatedStyle]}>
-      <Animated.View style={[styles.logoContainer, logoStyle]}>
-        <Image
-          source={require('@/shared/assets/images/owl-logo-prod.png')}
-          style={styles.logo}
-          resizeMode="contain"
+    <Animated.View style={[successStyles.successContainer, successViewStyle]}>
+      <ThemedCard style={successStyles.successCard}>
+        <Animated.View style={logoStyle}>
+          <Image
+            source={require('@shared/assets/images/owl-logo-prod.png')}
+            style={successStyles.successLogo}
+            resizeMode="contain"
+          />
+        </Animated.View>
+        <ThemedText style={successStyles.successTitle}>
+          Welcome, {user?.displayName || 'Explorer'}!
+        </ThemedText>
+        <ThemedText style={successStyles.successSubtitle}>
+          You're all set. Let the enlightening conversations begin.
+        </ThemedText>
+        <AnimatedButton
+          title="Continue"
+          onPress={handleContinue}
+          variant="primary"
+          size="large"
+          style={successStyles.successButton}
         />
-      </Animated.View>
-      <ThemedText style={styles.successTitle} type="title">{welcomeMessage}</ThemedText>
-      <ThemedText style={styles.successSubtitle} type="default">
-        You're all set to begin your journey.
-      </ThemedText>
-      <AnimatedButton
-        title="Continue"
-        onPress={onContinue}
-        variant="primary"
-        size="large"
-        style={styles.continueButton}
-      />
+      </ThemedCard>
     </Animated.View>
   );
 };
+
+const successStyles = StyleSheet.create({
+  successContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: 'transparent',
+  },
+  successCard: {
+    padding: 30,
+    borderRadius: 20,
+    alignItems: 'center',
+    backgroundColor: Colors.card,
+    width: '100%',
+    shadowColor: Colors.text,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 15,
+  },
+  successLogo: {
+    width: 100,
+    height: 100,
+    marginBottom: 20,
+  },
+  successTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 12,
+    color: Colors.text,
+  },
+  successSubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+    color: Colors.text,
+    opacity: 0.8,
+    lineHeight: 24,
+  },
+  successButton: {
+    borderRadius: 12,
+    paddingVertical: 16,
+    width: '100%',
+  },
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -416,7 +503,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   formCard: {
-    width: '100%',
     padding: 24,
     borderRadius: 20,
     alignItems: 'center',
@@ -425,6 +511,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
+    backgroundColor: Colors.card,
   },
   title: {
     fontFamily: 'Lora-SemiBold',
@@ -444,14 +531,13 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     width: '100%',
-    alignSelf: 'stretch',
+    marginBottom: 12,
   },
   input: {
     width: '100%',
-    height: 56,
+    height: 52,
     borderRadius: 12,
     paddingHorizontal: 16,
-    marginBottom: 8,
     fontSize: 16,
     fontWeight: '500',
     shadowColor: Colors.text,
@@ -459,6 +545,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    color: Colors.text,
   },
   authButton: {
     width: '100%',
@@ -473,11 +560,10 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   errorText: {
-    color: '#EF4444',
-    marginTop: 8,
+    fontSize: 14,
     textAlign: 'center',
-    fontWeight: '500',
-    minHeight: 20,
+    marginTop: 8,
+    color: Colors.destructive,
   },
   toggleButton: {
     paddingVertical: 8,
@@ -504,36 +590,51 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
-  successContainer: {
-    flex: 1,
+  googleButton: {
+    borderRadius: 25,
+    paddingVertical: 12,
+    backgroundColor: Colors.card,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
-    width: '100%',
+    shadowColor: Colors.text,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  logoContainer: {
-    marginBottom: 32,
+  googleButtonText: {
+    color: Colors.text,
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    width: '100%',
+    marginVertical: 16,
   },
-  logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 24,
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.tabIconDefault,
+    opacity: 0.3,
   },
-  successTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 12,
+  dividerText: {
+    marginHorizontal: 12,
+    color: Colors.tabIconDefault,
+    fontWeight: '600',
   },
-  successSubtitle: {
-    fontSize: 18,
-    textAlign: 'center',
-    opacity: 0.8,
-    marginBottom: 32,
+  buttonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   continueButton: {
-    width: '80%',
-    maxWidth: 300,
+    flex: 2,
+    marginLeft: 8,
   },
 }); 

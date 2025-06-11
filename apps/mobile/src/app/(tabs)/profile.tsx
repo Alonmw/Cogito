@@ -74,7 +74,7 @@ export default function ProfileScreen() {
           Profile
         </ThemedText>
         {user ? (
-          <ThemedCard style={{ marginBottom: 30, padding: 18 }}>
+          <ThemedCard style={styles.card}>
             <ThemedText type="subtitle" style={{ marginBottom: 8 }}>Email:</ThemedText>
             <ThemedText style={{ marginBottom: 16 }}>{user.email || 'N/A'}</ThemedText>
             <ThemedText type="subtitle" style={{ marginBottom: 8 }}>Display Name:</ThemedText>
@@ -89,16 +89,12 @@ export default function ProfileScreen() {
               title={isDeletingAccount ? "Deleting Account..." : "Delete Account"}
               onPress={handleDeleteAccount}
               variant="primary"
-              style={{ 
-                marginTop: 15, 
-                backgroundColor: isDeletingAccount ? '#999' : '#dc3545',
-                opacity: isDeletingAccount ? 0.7 : 1
-              }}
+              style={isDeletingAccount ? styles.disabledDeleteButton : styles.deleteButton}
               disabled={isDeletingAccount}
             />
           </ThemedCard>
         ) : isGuest ? (
-          <ThemedCard style={{ marginBottom: 30, alignItems: 'center', padding: 18 }}>
+          <ThemedCard style={{ ...styles.card, alignItems: 'center' }}>
             <ThemedText style={{ marginBottom: 10, textAlign: 'center' }}>
               You are currently using the app as a guest.
             </ThemedText>
@@ -119,3 +115,26 @@ export default function ProfileScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    marginBottom: 30,
+    padding: 24,
+    borderRadius: 20,
+    backgroundColor: Colors.card,
+    shadowColor: Colors.text,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  deleteButton: {
+    marginTop: 15,
+    backgroundColor: Colors.destructive,
+  },
+  disabledDeleteButton: {
+    marginTop: 15,
+    backgroundColor: Colors.tabIconDefault,
+    opacity: 0.7,
+  },
+});

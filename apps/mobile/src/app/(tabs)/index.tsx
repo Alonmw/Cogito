@@ -363,7 +363,7 @@ export default function ChatScreen() {
         style={[
           {
             alignSelf: isUser ? 'flex-end' : 'flex-start',
-            backgroundColor: isUser ? Colors.tint : '#EFE3C7',
+            backgroundColor: isUser ? Colors.tint : Colors.card,
             borderRadius: 18,
             paddingVertical: spacing.s,
             paddingHorizontal: spacing.m,
@@ -391,7 +391,7 @@ export default function ChatScreen() {
     <InputToolbar
       {...props}
       containerStyle={{
-        backgroundColor: '#F5E9D7', // Parchment-like input bar
+        backgroundColor: Colors.background, // Parchment-like input bar
         paddingHorizontal: spacing.m, // Use horizontal padding for symmetrical margins
         paddingVertical: spacing.s,
         flexDirection: 'row',
@@ -410,7 +410,7 @@ export default function ChatScreen() {
         textInputStyle={{
           color: Colors.text,
           fontSize: 16,
-          backgroundColor: '#FAF3E0', // Subtle contrast with input bar
+          backgroundColor: Colors.card, // Subtle contrast with input bar
           borderRadius: 20,
           paddingHorizontal: spacing.m,
           minHeight: 40,
@@ -537,7 +537,7 @@ export default function ChatScreen() {
       <ThemedView
         style={{
           alignSelf: 'flex-start',
-          backgroundColor: '#EFE3C7',
+          backgroundColor: Colors.card,
           borderRadius: 18,
           paddingVertical: spacing.s,
           paddingHorizontal: spacing.m,
